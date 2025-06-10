@@ -38,29 +38,43 @@ const Payslip = () => {
       if (n < 20) return a[n];
       if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
       if (n < 1000)
-        return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + numToWords(n % 100) : '');
-      return ''; // This line would only be reached if n is negative or too large for the current logic
+        return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + numToWords(n % 100) : '') + ' Rupees';
+      return '';
     };
 
+    let integerPart = Math.floor(num);
+    let decimalPart = Math.round((num - integerPart) * 100);
+
     let result = '';
-    // Handle Crore (10,000,000)
-    if (num >= 10000000) {
-      result += numToWords(Math.floor(num / 10000000)) + ' Crore ';
-      num %= 10000000;
+
+    let tempNum = integerPart;
+    let parts = [];
+
+    if (tempNum >= 10000000) {
+      parts.push(numToWords(Math.floor(tempNum / 10000000)) + ' Crore');
+      tempNum %= 10000000;
     }
-    // Handle Lakh (100,000)
-    if (num >= 100000) {
-      result += numToWords(Math.floor(num / 100000)) + ' Lakh ';
-      num %= 100000;
+    if (tempNum >= 100000) {
+      parts.push(numToWords(Math.floor(tempNum / 100000)) + ' Lakh');
+      tempNum %= 100000;
     }
-    // Handle Thousand (1,000)
-    if (num >= 1000) {
-      result += numToWords(Math.floor(num / 1000)) + ' Thousand ';
-      num %= 1000;
+    if (tempNum >= 1000) {
+      parts.push(numToWords(Math.floor(tempNum / 1000)) + ' Thousand');
+      tempNum %= 1000;
     }
-    // Handle remaining hundreds, tens, and units
-    if (num > 0) {
-      result += numToWords(num);
+    if (tempNum > 0) {
+      parts.push(numToWords(tempNum));
+    }
+
+    result = parts.join(' ');
+
+    if (decimalPart > 0) {
+      if (result.length > 0) {
+        result += ' and ';
+      }
+      result += numToWords(decimalPart) + ' Paisa';
+    } else if (result.length === 0) {
+      result = 'Zero';
     }
 
     return result.trim();
@@ -109,6 +123,24 @@ const Payslip = () => {
   );
 
   const netPay = grossEarning - grossDeduction;
+  const annualEarningsData = [
+    { desc: "Basic", gross: 1547470.00, exempt: 0.00, taxable: 1547470.00 },
+    { desc: "House Rent Allowance", gross: 904621.00, exempt: 0.00, taxable: 904621.00 },
+    { desc: "Other Allowance", gross: 733258.00, exempt: 0.00, taxable: 733258.00 },
+    { desc: "Car Allowance", gross: 603121.00, exempt: 0.00, taxable: 603121.00 },
+    { desc: "Interest Subsidy", gross: 40308.00, exempt: 0.00, taxable: 40308.00 },
+    { desc: "Performance Pay", gross: 1145110.00, exempt: 0.00, taxable: 1145110.00 },
+    { desc: "Long Term Incentive Plan", gross: 637408.00, exempt: 0.00, taxable: 637408.00 },
+    { desc: "Fuel and Driver", gross: 32310.00, exempt: 32310.00, taxable: 0.00 },
+    { desc: "Childrens Education Allowance", gross: 2393.00, exempt: 2393.00, taxable: 0.00 },
+    { desc: "Miscellaneous Allowance", gross: 576312.00, exempt: 0.00, taxable: 576312.00 },
+    { desc: "NPS CTC", gross: 152480.00, exempt: 0.00, taxable: 152480.00 },
+    { desc: "Mobile Handset Allowance", gross: 52830.00, exempt: 8499.00, taxable: 44331.00 },
+    { desc: "Stock Options", gross: 241050.00, exempt: 0.00, taxable: 241050.00 },
+  ];
+  const annualGrossTotal = annualEarningsData.reduce((sum, item) => sum + item.gross, 0);
+  const annualExemptTotal = annualEarningsData.reduce((sum, item) => sum + item.exempt, 0);
+  const annualTaxableTotal = annualEarningsData.reduce((sum, item) => sum + item.taxable, 0);
   return (
 
     <div className="p-6 max-w-[1200px] mx-auto text-xs font-sans bg-white text-black print:text-black print:bg-white print:p-2 print:max-w-full print:text-[10px]">
@@ -122,49 +154,49 @@ const Payslip = () => {
       {/* Details */}
       <div className="grid grid-cols-2 gap-4 border border-gray-400 p-4 mb-4">
         <div>
-      <label><strong>Code:</strong></label>
-      <input type="text" defaultValue="16761" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Code:</strong></label>
+          <input type="text" defaultValue="16761" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>Name:</strong></label>
-      <input type="text" defaultValue="Mr SHAH" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Name:</strong></label>
+          <input type="text" defaultValue="Mr SHAH" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>Department:</strong></label>
-      <input type="text" defaultValue="BUSINESS INSIGHTS" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Department:</strong></label>
+          <input type="text" defaultValue="BUSINESS INSIGHTS" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>Designation:</strong></label>
-      <input type="text" defaultValue="EVP" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Designation:</strong></label>
+          <input type="text" defaultValue="EVP" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>Grade:</strong></label>
-      <input type="text" defaultValue="16" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Grade:</strong></label>
+          <input type="text" defaultValue="16" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>DOB:</strong></label>
-      <input type="text" defaultValue="2 Aug 1979" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>DOB:</strong></label>
+          <input type="text" defaultValue="2 Aug 1979" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>DOJ:</strong></label>
-      <input type="text" defaultValue="18 Jun 2008" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
-      </div>
+          <label><strong>DOJ:</strong></label>
+          <input type="text" defaultValue="18 Jun 2008" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+        </div>
         <div>
-      <label><strong>Location:</strong></label>
-      <input type="text" defaultValue="Corporate" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Location:</strong></label>
+          <input type="text" defaultValue="Corporate" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>Bank/MICR:</strong></label>
-      <input type="text" defaultValue="1234565678990 (HDFC BANK)" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Bank/MICR:</strong></label>
+          <input type="text" defaultValue="1234565678990 (HDFC BANK)" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>Cost Center:</strong></label>
-      <input type="text" defaultValue="2000421233" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>Cost Center:</strong></label>
+          <input type="text" defaultValue="2000421233" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>PAN No:</strong></label>
-      <input type="text" defaultValue="ABCDE12345" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>PAN No:</strong></label>
+          <input type="text" defaultValue="ABCDE12345" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>PF No:</strong></label>
-      <input type="text" defaultValue="AB/CDE/12345/678/9012" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>PF No:</strong></label>
+          <input type="text" defaultValue="AB/CDE/12345/678/9012" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>ESI No:</strong></label>
-      <input type="text" defaultValue="-" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+          <label><strong>ESI No:</strong></label>
+          <input type="text" defaultValue="-" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
 
-      <label><strong>PF UAN:</strong></label>
-      <input type="text" defaultValue="123456789012" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
-    </div>
+          <label><strong>PF UAN:</strong></label>
+          <input type="text" defaultValue="123456789012" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+        </div>
 
       </div>
 
@@ -173,11 +205,11 @@ const Payslip = () => {
         {/* Earnings */}
         <div className="mb-6">
           <h3 className="font-bold mb-2">Earnings</h3>
-          <table className="w-full border">
+          <table className="w-full border table-fixed">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border p-1 text-left">Description</th>
-                <th className="border p-1 text-left">Amount</th>
+                <th className="border p-1 text-left w-3/4">Description</th>
+                <th className="border p-1 text-left w-1/4">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -187,16 +219,23 @@ const Payslip = () => {
                   <td className="border p-1">
                     <input
                       type="number"
-                      className="w-full px-1"
+                      step="0.01"
+                      className="w-24 px-1"
                       value={item.rate}
                       onChange={(e) => updateEarning(idx, e.target.value)}
+                      onBlur={(e) => {
+                        const val = parseFloat(e.target.value || 0).toFixed(2);
+                        updateEarning(idx, val);
+                      }}
                     />
                   </td>
                 </tr>
               ))}
               <tr className="font-bold">
                 <td className="border p-1">GROSS EARNING</td>
-                <td className="border p-1 text-right">{grossEarning}</td>
+                <td className="border p-1 text-right">
+                  {parseFloat(grossEarning).toFixed(2)}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -205,12 +244,12 @@ const Payslip = () => {
         {/* Deductions */}
         <div>
           <h3 className="font-bold mb-2">Deductions</h3>
-          <table className="w-full border">
+          <table className="w-full border table-fixed">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border p-1 text-left">Description</th>
-                <th className="border p-1 text-left">Amount</th>
-                <th className="border p-1 text-center">Include</th>
+                <th className="border p-1 text-left w-3/5">Description</th>
+                <th className="border p-1 text-left w-1.5/5">Amount</th>
+                <th className="border p-1 text-center w-0.5/5">Include</th>
               </tr>
             </thead>
             <tbody>
@@ -221,15 +260,17 @@ const Payslip = () => {
                     {deductionToggles[key] ? (
                       <input
                         type="number"
-                        className="w-full px-1"
-                        value={value}
+                        step="0.01"
+                        className="w-24 px-1"
+                        value={parseFloat(value).toFixed(2)}
                         readOnly
                       />
                     ) : (
-                      <span className="block px-1 text-gray-500">{value}</span>
+                      <span className="block px-1 text-gray-500">
+                        {parseFloat(value).toFixed(2)}
+                      </span>
                     )}
                   </td>
-
                   <td className="border p-1 text-center">
                     <input
                       type="checkbox"
@@ -241,22 +282,60 @@ const Payslip = () => {
               ))}
               <tr className="font-bold">
                 <td className="border p-1">GROSS DEDUCTION</td>
-                <td className="border p-1 text-right">{grossDeduction}</td>
+                <td className="border p-1 text-right">
+                  {parseFloat(grossDeduction).toFixed(2)}
+                </td>
                 <td className="border p-1" />
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-
-
+      
       <p className="text-center font-semibold mb-4">
-        Net Pay: {netPay.toFixed(2)} ({numberToWords(netPay)} Rupees Only)
+        Net Pay: {netPay.toFixed(2)} ({numberToWords(netPay)} Only)
       </p>
       <p className="font-bold mb-2">Income Tax Worksheet for the Period April 2023 - March 2024</p>
-
+      <hr></hr><br></br>
       {/* Additional tables for Income Tax Worksheet, Deductions, Perqs, etc., can be added here similarly with detailed rows */}
-
+      {/* Annual Earnings Table (Income Tax Worksheet Section) */}
+      <div className="mb-6">
+        <h3 className="font-bold mb-2">Earnings</h3>
+        <table className="w-full border table-fixed">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-1 text-left w-2/5">Description</th>
+              <th className="border p-1 text-left w-1/5">Gross</th>
+              <th className="border p-1 text-left w-1/5">Exempt</th>
+              <th className="border p-1 text-left w-1/5">Taxable</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Map over the annualEarningsData to display yearly values */}
+            {annualEarningsData.map((item, idx) => (
+              <tr key={idx}>
+                <td className="border p-1">{item.desc}</td>
+                <td className="border p-1 text-right">{item.gross.toFixed(2)}</td>
+                <td className="border p-1 text-right">{item.exempt.toFixed(2)}</td>
+                <td className="border p-1 text-right">{item.taxable.toFixed(2)}</td>
+              </tr>
+            ))}
+            <tr className="font-bold">
+              <td className="border p-1">TOTAL EARNINGS</td> {/* Changed to TOTAL EARNINGS as per image */}
+              <td className="border p-1 text-right">
+                {annualGrossTotal.toFixed(2)}
+              </td>
+              <td className="border p-1 text-right">
+                {annualExemptTotal.toFixed(2)}
+              </td>
+              <td className="border p-1 text-right">
+                {annualTaxableTotal.toFixed(2)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+        <hr></hr>
       <p className="text-xs text-center mt-6 border-t pt-4">
         Personal Note: This is a system generated payslip, does not require any signature.
       </p>
