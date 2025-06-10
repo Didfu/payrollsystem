@@ -1,0 +1,267 @@
+"use client"; // for App Router
+import React, { useState, useEffect } from "react";
+
+const Payslip = () => {
+  const [earnings, setEarnings] = useState([
+    { desc: "Basic", rate: 129151.0 },
+    { desc: "House Rent Allowance", rate: 77985.0 },
+    { desc: "Other Allowance", rate: 27908.0 },
+    { desc: "Car Allowance", rate: 6091.0 },
+    { desc: "Interest Subsidy", rate: 3383.0 },
+    { desc: "Performance Pay", rate: 57612.0 },
+    { desc: "Long Term Incentive Plan", rate: 0.0 },
+    { desc: "Miscellaneous Allowance", rate: 358.0 },
+    { desc: "Mobile Handset Allowance", rate: 449.0 },
+  ]);
+
+  const [deductions, setDeductions] = useState({
+    incomeTax: 0,
+    pf: 0,
+    professionalTax: 200,
+    benevolence: 2000,
+    esop: 5208,
+  });
+  const numberToWords = (num) => {
+    if (num === 0) return 'Zero';
+
+    const a = [
+      '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+      'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen',
+      'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'
+    ];
+    const b = [
+      '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty',
+      'Sixty', 'Seventy', 'Eighty', 'Ninety'
+    ];
+
+    const numToWords = (n) => {
+      if (n < 20) return a[n];
+      if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? ' ' + a[n % 10] : '');
+      if (n < 1000)
+        return a[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + numToWords(n % 100) : '');
+      return ''; // This line would only be reached if n is negative or too large for the current logic
+    };
+
+    let result = '';
+    // Handle Crore (10,000,000)
+    if (num >= 10000000) {
+      result += numToWords(Math.floor(num / 10000000)) + ' Crore ';
+      num %= 10000000;
+    }
+    // Handle Lakh (100,000)
+    if (num >= 100000) {
+      result += numToWords(Math.floor(num / 100000)) + ' Lakh ';
+      num %= 100000;
+    }
+    // Handle Thousand (1,000)
+    if (num >= 1000) {
+      result += numToWords(Math.floor(num / 1000)) + ' Thousand ';
+      num %= 1000;
+    }
+    // Handle remaining hundreds, tens, and units
+    if (num > 0) {
+      result += numToWords(num);
+    }
+
+    return result.trim();
+  };
+  const [deductionToggles, setDeductionToggles] = useState({
+    incomeTax: true,
+    pf: true,
+    professionalTax: true,
+    benevolence: true,
+    esop: true,
+  });
+
+  const updateEarning = (index, value) => {
+    const updated = [...earnings];
+    updated[index].rate = parseFloat(value) || 0;
+    setEarnings(updated);
+  };
+  const handleResize = (e) => {
+    const input = e.target;
+    input.style.width = `${Math.max(150, input.value.length * 8)}px`;
+  };
+
+  useEffect(() => {
+    const gross = earnings.reduce((sum, item) => sum + item.rate, 0);
+    const basic = earnings.find((e) => e.desc === "Basic")?.rate || 0;
+
+    setDeductions((prev) => ({
+      ...prev,
+      incomeTax: Math.round(gross * 0.3),
+      pf: Math.round(basic * 0.12),
+    }));
+  }, [earnings]);
+
+  const toggleDeduction = (key) => {
+    setDeductionToggles((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const grossEarning = earnings.reduce((sum, item) => sum + item.rate, 0);
+
+  const grossDeduction = Object.entries(deductions).reduce(
+    (sum, [key, value]) => (deductionToggles[key] ? sum + value : sum),
+    0
+  );
+
+  const netPay = grossEarning - grossDeduction;
+  return (
+
+    <div className="p-6 max-w-[1200px] mx-auto text-xs font-sans bg-white text-black print:text-black print:bg-white print:p-2 print:max-w-full print:text-[10px]">
+      {/* Header */}
+      <div className="text-center mb-4">
+        <h1 className="text-xl font-bold">HDFC Life Insurance Company Limited</h1>
+        <p>MUMBAI - 4000067, MAHARASHTRA</p>
+        <h2 className="text-sm font-semibold mt-2">Pay Slip for the month of March 2024</h2>
+      </div>
+
+      {/* Details */}
+      <div className="grid grid-cols-2 gap-4 border border-gray-400 p-4 mb-4">
+        <div>
+      <label><strong>Code:</strong></label>
+      <input type="text" defaultValue="16761" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>Name:</strong></label>
+      <input type="text" defaultValue="Mr SHAH" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>Department:</strong></label>
+      <input type="text" defaultValue="BUSINESS INSIGHTS" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>Designation:</strong></label>
+      <input type="text" defaultValue="EVP" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>Grade:</strong></label>
+      <input type="text" defaultValue="16" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>DOB:</strong></label>
+      <input type="text" defaultValue="2 Aug 1979" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>DOJ:</strong></label>
+      <input type="text" defaultValue="18 Jun 2008" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+      </div>
+        <div>
+      <label><strong>Location:</strong></label>
+      <input type="text" defaultValue="Corporate" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>Bank/MICR:</strong></label>
+      <input type="text" defaultValue="1234565678990 (HDFC BANK)" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>Cost Center:</strong></label>
+      <input type="text" defaultValue="2000421233" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>PAN No:</strong></label>
+      <input type="text" defaultValue="ABCDE12345" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>PF No:</strong></label>
+      <input type="text" defaultValue="AB/CDE/12345/678/9012" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>ESI No:</strong></label>
+      <input type="text" defaultValue="-" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+
+      <label><strong>PF UAN:</strong></label>
+      <input type="text" defaultValue="123456789012" onInput={handleResize} style={{ width: 'auto', minWidth: '150px' }} /><br />
+    </div>
+
+      </div>
+
+      {/* Earnings and Deductions */}
+      <div className="grid grid-cols-2 gap-6 mb-4">
+        {/* Earnings */}
+        <div className="mb-6">
+          <h3 className="font-bold mb-2">Earnings</h3>
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-1 text-left">Description</th>
+                <th className="border p-1 text-left">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {earnings.map((item, idx) => (
+                <tr key={idx}>
+                  <td className="border p-1">{item.desc}</td>
+                  <td className="border p-1">
+                    <input
+                      type="number"
+                      className="w-full px-1"
+                      value={item.rate}
+                      onChange={(e) => updateEarning(idx, e.target.value)}
+                    />
+                  </td>
+                </tr>
+              ))}
+              <tr className="font-bold">
+                <td className="border p-1">GROSS EARNING</td>
+                <td className="border p-1 text-right">{grossEarning}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Deductions */}
+        <div>
+          <h3 className="font-bold mb-2">Deductions</h3>
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border p-1 text-left">Description</th>
+                <th className="border p-1 text-left">Amount</th>
+                <th className="border p-1 text-center">Include</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(deductions).map(([key, value]) => (
+                <tr key={key}>
+                  <td className="border p-1 capitalize">{key}</td>
+                  <td className="border p-1">
+                    {deductionToggles[key] ? (
+                      <input
+                        type="number"
+                        className="w-full px-1"
+                        value={value}
+                        readOnly
+                      />
+                    ) : (
+                      <span className="block px-1 text-gray-500">{value}</span>
+                    )}
+                  </td>
+
+                  <td className="border p-1 text-center">
+                    <input
+                      type="checkbox"
+                      checked={deductionToggles[key]}
+                      onChange={() => toggleDeduction(key)}
+                    />
+                  </td>
+                </tr>
+              ))}
+              <tr className="font-bold">
+                <td className="border p-1">GROSS DEDUCTION</td>
+                <td className="border p-1 text-right">{grossDeduction}</td>
+                <td className="border p-1" />
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      <p className="text-center font-semibold mb-4">
+        Net Pay: {netPay.toFixed(2)} ({numberToWords(netPay)} Rupees Only)
+      </p>
+      <p className="font-bold mb-2">Income Tax Worksheet for the Period April 2023 - March 2024</p>
+
+      {/* Additional tables for Income Tax Worksheet, Deductions, Perqs, etc., can be added here similarly with detailed rows */}
+
+      <p className="text-xs text-center mt-6 border-t pt-4">
+        Personal Note: This is a system generated payslip, does not require any signature.
+      </p>
+    </div>
+  );
+};
+
+export default Payslip;
