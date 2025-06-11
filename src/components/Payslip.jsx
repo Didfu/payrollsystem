@@ -356,7 +356,7 @@ const [editEmployeeData, setEditEmployeeData] = useState({});
                 {selectedEmployee?.address || "Company Address"}
               </p>
               <div className="border-t border-b border-gray-300 py-3 mt-4">
-                <h2 className="text-xl font-bold">MONTHLY PAYSLIP</h2>
+                <h2 className="text-xl font-bold">PAYSLIP</h2>
                 <p className="text-sm text-gray-600">
                   For the month of {selectedMonth} {selectedYear}
                 </p>
@@ -392,6 +392,7 @@ const [editEmployeeData, setEditEmployeeData] = useState({});
     benevolence: 2000,
     esop: 5208,
     esic: 0,
+    loanRepayment:0,
   });
   const [deductionToggles, setDeductionToggles] = useState({
     incomeTax: true,
@@ -400,6 +401,7 @@ const [editEmployeeData, setEditEmployeeData] = useState({});
     benevolence: true,
     esop: true,
     esic: true,
+    loanRepayment: true,
   });
   // Add this useEffect to inject print styles
   useEffect(() => {
@@ -593,6 +595,7 @@ const handleCancelEdit = () => {
         benevolence: 2000,
         esop: 5208,
         esic: 0,
+        loanRepayment: 0,
       }
     );
     setDeductionToggles(
@@ -603,6 +606,7 @@ const handleCancelEdit = () => {
         benevolence: true,
         esop: true,
         esic: true,
+        loanRepayment: true,
       }
     );
   }, [selectedEmpId, selectedMonth, selectedYear, employeeData]);
