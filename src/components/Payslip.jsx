@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { firebaseService } from '../lib/firebaseService';
 import {
   Select,
   SelectContent,
@@ -85,7 +86,7 @@ const initialEmployeeState = {
     heading: "", address: "", basicSalary: 20000.0, pfUan: ""
 };
 
-const Payslip = () => {
+const Payslip = ({ user }) => {
     const [isSetupComplete, setIsSetupComplete] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [showAddEmployee, setShowAddEmployee] = useState(false);
@@ -107,6 +108,43 @@ const Payslip = () => {
         esop: true, esic: true, loanRepayment: true,
     });
     const [typedValue, setTypedValue] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+const [dataLoaded, setDataLoaded] = useState(false);
+useEffect(() => {
+    const loadUserData = async () => {
+        if (!user?.uid || dataLoaded) return;
+        
+        setIsLoading(true);
+        try {
+            // Load employees
+            const employeesData = await firebaseService.getEmployees(user.uid);
+            const employeesWithLocalIds = employeesData.map(emp => ({
+                ...emp,
+                id: emp.id // Firebase doc ID becomes the local ID
+            }));
+            setEmployees(employeesWithLocalIds);
+            
+            // Load payroll data
+            const payrollData = await firebaseService.getAllPayrollData(user.uid);
+            setEmployeeData(payrollData);
+            
+            // If we have employees, set the first one as selected
+            if (employeesWithLocalIds.length > 0) {
+                setSelectedEmpId(employeesWithLocalIds[0].id);
+                setIsSetupComplete(true);
+            }
+            
+            setDataLoaded(true);
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            alert('Error loading your data. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    loadUserData();
+}, [user?.uid, dataLoaded]);
     
     useEffect(() => {
         const styleSheet = document.createElement("style");
@@ -115,29 +153,58 @@ const Payslip = () => {
         return () => document.head.removeChild(styleSheet);
     }, []);
 
-    const handleSaveEmployee = (employeeData) => {
-        if (!employeeData.name.trim() || !employeeData.code.trim()) {
-            alert("Please fill in at least the name and employee code");
-            return;
-        }
+    // Replace the existing handleSaveEmployee function with this:
+const handleSaveEmployee = async (employeeData) => {
+    if (!employeeData.name.trim() || !employeeData.code.trim()) {
+        alert("Please fill in at least the name and employee code");
+        return;
+    }
 
-        if (employeeData.id) { // Update existing employee
-            setEmployees(prev => prev.map(emp => emp.id === employeeData.id ? employeeData : emp));
+    setIsLoading(true);
+    try {
+        const savedId = await firebaseService.saveEmployee(user.uid, employeeData);
+        
+        if (employeeData.id) {
+            // Update existing employee
+            setEmployees(prev => prev.map(emp => 
+                emp.id === employeeData.id ? { ...employeeData, id: savedId } : emp
+            ));
             alert("Employee updated successfully!");
-        } else { // Add new employee
-            const empId = `emp-${Date.now()}`;
-            setEmployees(prev => [...prev, { ...employeeData, id: empId }]);
+        } else {
+            // Add new employee
+            setEmployees(prev => [...prev, { ...employeeData, id: savedId }]);
+            alert("Employee added successfully!");
         }
+        
         setEditingEmployeeId(null);
         setShowAddEmployee(false);
-    };
+    } catch (error) {
+        console.error('Error saving employee:', error);
+        alert('Error saving employee. Please try again.');
+    } finally {
+        setIsLoading(false);
+    }
+};
 
-    const handleDeleteEmployee = (empId) => {
-        if (confirm("Are you sure you want to delete this employee?")) {
-            setEmployees(prev => prev.filter(emp => emp.id !== empId));
-            if (selectedEmpId === empId) setSelectedEmpId("");
-        }
-    };
+    // Replace the existing handleDeleteEmployee function with this:
+const handleDeleteEmployee = async (empId) => {
+    if (!confirm("Are you sure you want to delete this employee? This will also delete all their payroll data.")) {
+        return;
+    }
+
+    setIsLoading(true);
+    try {
+        await firebaseService.deleteEmployee(user.uid, empId);
+        setEmployees(prev => prev.filter(emp => emp.id !== empId));
+        if (selectedEmpId === empId) setSelectedEmpId("");
+        alert("Employee deleted successfully!");
+    } catch (error) {
+        console.error('Error deleting employee:', error);
+        alert('Error deleting employee. Please try again.');
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     const proceedToPayslip = () => {
         if (employees.length === 0) {
@@ -254,22 +321,50 @@ const Payslip = () => {
     const updateEarning = (category, val) => setMonthlyEarnings((prev) => ({ ...prev, [category]: parseFloat(val) || 0 }));
     const toggleDeduction = (k) => setDeductionToggles((prev) => ({ ...prev, [k]: !prev[k] }));
 
-    const saveCurrentMonthData = () => {
-        if (!selectedEmpId || !selectedMonth || !selectedYear) {
-            return alert("Please select employee, month and year");
-        }
+    // Replace the existing saveCurrentMonthData function with this:
+const saveCurrentMonthData = async () => {
+    if (!selectedEmpId || !selectedMonth || !selectedYear) {
+        return alert("Please select employee, month and year");
+    }
+
+    setIsLoading(true);
+    try {
+        await firebaseService.saveMonthlyData(
+            user.uid,
+            selectedEmpId,
+            selectedYear,
+            selectedMonth,
+            {
+                earnings: { ...monthlyEarnings },
+                deductions: { ...deductions },
+                deductionToggles: { ...deductionToggles }
+            }
+        );
+
+        // Update local state
         setEmployeeData((prev) => ({
             ...prev,
             [selectedEmpId]: {
                 ...prev[selectedEmpId],
                 [selectedYear]: {
                     ...prev[selectedEmpId]?.[selectedYear],
-                    [selectedMonth]: { earnings: { ...monthlyEarnings }, deductions: { ...deductions }, deductionToggles: { ...deductionToggles } },
+                    [selectedMonth]: { 
+                        earnings: { ...monthlyEarnings }, 
+                        deductions: { ...deductions }, 
+                        deductionToggles: { ...deductionToggles } 
+                    },
                 },
             },
         }));
+        
         alert(`Data saved for ${selectedMonth} ${selectedYear}!`);
-    };
+    } catch (error) {
+        console.error('Error saving monthly data:', error);
+        alert('Error saving data. Please try again.');
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     const AnnualReportBlock = () => (
         <div className="mb-6">
@@ -485,7 +580,17 @@ const Payslip = () => {
     };
 
     if (!isSetupComplete) {
-        return (
+        return (<>
+          {isLoading && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span>Processing...</span>
+            </div>
+        </div>
+    </div>
+)}
             <div className="p-4 sm:p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
                 <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
                     <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">Payroll System Setup</h1>
@@ -525,7 +630,7 @@ const Payslip = () => {
                     </div>
                 </Card>
             </div>
-        );
+        </>);
     }
     const PrintLayout = () => (
         <div className="print-only">
