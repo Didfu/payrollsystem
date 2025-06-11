@@ -278,7 +278,7 @@ const handleDeleteEmployee = async (empId) => {
             ...prev,
             incomeTax: Math.round(gross * 0.3),
             pf: Math.ceil(basic * 0.12),
-            esic: basic * 0.075,
+            esic: basic * 0.0075,
         }));
     }, [monthlyEarnings]);
 
