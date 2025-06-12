@@ -110,6 +110,95 @@ const Payslip = ({ user }) => {
     const [typedValue, setTypedValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 const [dataLoaded, setDataLoaded] = useState(false);
+const [showShareModal, setShowShareModal] = useState(false);
+const [shareEmail, setShareEmail] = useState("");
+const [sharedData, setSharedData] = useState([]);
+const [showSharedData, setShowSharedData] = useState(false);
+
+// Add this useEffect to load shared data
+useEffect(() => {
+    const loadSharedData = async () => {
+        if (!user?.email) return;
+        
+        try {
+            const shared = await firebaseService.getSharedPayrollData(user.email);
+            setSharedData(shared.filter(item => item.status === 'pending'));
+        } catch (error) {
+            console.error('Error loading shared data:', error);
+        }
+    };
+
+    loadSharedData();
+}, [user?.email]);
+
+// Add these new functions
+const handleSharePayroll = async () => {
+    if (!shareEmail.trim()) {
+        alert("Please enter an email address");
+        return;
+    }
+    
+    if (!selectedEmployee || !selectedMonth || !selectedYear) {
+        alert("Please select employee, month and year");
+        return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(shareEmail.trim())) {
+        alert("Please enter a valid email address");
+        return;
+    }
+    
+    setIsLoading(true);
+    try {
+        const shareData = {
+            employee: selectedEmployee,
+            year: selectedYear,
+            month: selectedMonth,
+            payrollData: {
+                earnings: { ...monthlyEarnings },
+                deductions: { ...deductions },
+                deductionToggles: { ...deductionToggles }
+            }
+        };
+        
+        await firebaseService.sharePayrollData(user.uid, shareEmail.trim(), shareData);
+        alert(`Payroll data shared successfully with ${shareEmail}!`);
+        setShowShareModal(false);
+        setShareEmail("");
+    } catch (error) {
+        console.error('Error sharing payroll:', error);
+        alert('Error sharing payroll data. Please try again.');
+    } finally {
+        setIsLoading(false);
+    }
+};
+
+const handleAcceptSharedData = async (shareItem) => {
+    setIsLoading(true);
+    try {
+        await firebaseService.acceptSharedData(shareItem.id, user.uid, shareItem.shareData);
+        
+        // Refresh local data
+        const employeesData = await firebaseService.getEmployees(user.uid);
+        const employeesWithLocalIds = employeesData.map(emp => ({
+            ...emp,
+            id: emp.id
+        }));
+        setEmployees(employeesWithLocalIds);
+        
+        const payrollData = await firebaseService.getAllPayrollData(user.uid);
+        setEmployeeData(payrollData);
+        
+        setSharedData(prev => prev.filter(item => item.id !== shareItem.id));
+        alert("Shared data accepted successfully!");
+    } catch (error) {
+        console.error('Error accepting shared data:', error);
+        alert('Error accepting shared data. Please try again.');
+    } finally {
+        setIsLoading(false);
+    }
+};
 useEffect(() => {
     const loadUserData = async () => {
         if (!user?.uid || dataLoaded) return;
@@ -578,10 +667,47 @@ const saveCurrentMonthData = async () => {
             </Card>
         );
     };
+    const SharedDataModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Shared Payroll Data ({sharedData.length})</h3>
+            {sharedData.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No shared data available</p>
+            ) : (
+                <div className="space-y-4">
+                    {sharedData.map((item) => (
+                        <div key={item.id} className="border rounded-lg p-4">
+                            <div className="grid grid-cols-2 gap-4 mb-3">
+                                <div><strong>Employee:</strong> {item.shareData.employee.name}</div>
+                                <div><strong>Period:</strong> {item.shareData.month} {item.shareData.year}</div>
+                                <div><strong>From:</strong> {item.fromUserId}</div>
+                                <div><strong>Shared:</strong> {item.sharedAt?.toDate?.()?.toLocaleDateString() || 'Recently'}</div>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button 
+                                    size="sm" 
+                                    onClick={() => handleAcceptSharedData(item)}
+                                    className="bg-green-600 hover:bg-green-700"
+                                >
+                                    Accept & Add to Dashboard
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+            <div className="mt-6 flex justify-end">
+                <Button variant="outline" onClick={() => setShowSharedData(false)}>
+                    Close
+                </Button>
+            </div>
+        </div>
+    </div>
+);
 
     if (!isSetupComplete) {
-        return (<>
-          {isLoading && (
+    return (<>
+      {isLoading && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg shadow-lg">
             <div className="flex items-center gap-3">
@@ -593,7 +719,21 @@ const saveCurrentMonthData = async () => {
 )}
             <div className="p-4 sm:p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
                 <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
-                    <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-center">Payroll System Setup</h1>
+                    <div className="flex justify-between items-center mb-4 sm:mb-6">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-center flex-1">Payroll System Setup</h1>
+                        {sharedData.length > 0 && (
+                            <Button 
+                                variant="outline" 
+                                onClick={() => setShowSharedData(true)} 
+                                className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative ml-4"
+                            >
+                                Shared Data
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                    {sharedData.length}
+                                </span>
+                            </Button>
+                        )}
+                    </div>
                     <p className="text-gray-600 mb-4 sm:mb-6 text-center">Add employees to get started with payslip generation</p>
                     {employees.length > 0 && (
                         <div className="mb-6">
@@ -630,6 +770,7 @@ const saveCurrentMonthData = async () => {
                     </div>
                 </Card>
             </div>
+            {showSharedData && <SharedDataModal />}
         </>);
     }
     const PrintLayout = () => (
@@ -662,17 +803,126 @@ const saveCurrentMonthData = async () => {
           )}
         </div>
       );
+      
+      const ShareModal = () => {
+    const [localEmail, setLocalEmail] = useState(shareEmail);
+    
+    // Update local state when modal opens
+    useEffect(() => {
+        setLocalEmail(shareEmail);
+    }, [shareEmail]);
+
+    const handleShare = async () => {
+        if (!localEmail.trim()) {
+            alert("Please enter an email address");
+            return;
+        }
+        
+        if (!selectedEmployee || !selectedMonth || !selectedYear) {
+            alert("Please select employee, month and year");
+            return;
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(localEmail.trim())) {
+            alert("Please enter a valid email address");
+            return;
+        }
+        
+        setIsLoading(true);
+        try {
+            const shareData = {
+                employee: selectedEmployee,
+                year: selectedYear,
+                month: selectedMonth,
+                payrollData: {
+                    earnings: { ...monthlyEarnings },
+                    deductions: { ...deductions },
+                    deductionToggles: { ...deductionToggles }
+                }
+            };
+            
+            await firebaseService.sharePayrollData(user.uid, localEmail.trim(), shareData);
+            alert(`Payroll data shared successfully with ${localEmail}!`);
+            setShowShareModal(false);
+            setShareEmail("");
+            setLocalEmail("");
+        } catch (error) {
+            console.error('Error sharing payroll:', error);
+            alert('Error sharing payroll data. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                <h3 className="text-lg font-semibold mb-4">Share Payroll Data</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                    Share {selectedEmployee?.name}'s payroll data for {selectedMonth} {selectedYear}
+                </p>
+                <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Email address</label>
+                    <input
+                        type="email"
+                        value={localEmail}
+                        onChange={(e) => setLocalEmail(e.target.value)}
+                        className="w-full border rounded px-3 py-2"
+                        placeholder="Enter recipient's email"
+                        autoFocus
+                    />
+                </div>
+                <div className="flex gap-3">
+                    <Button onClick={handleShare} className="bg-green-600 hover:bg-green-700">
+                        Share
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                        setShowShareModal(false);
+                        setShareEmail("");
+                        setLocalEmail("");
+                    }}>
+                        Cancel
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
     return (
         <div className="p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none print:mx-0 print:bg-white border-0">
             <div className="shadow p-6 rounded-2xl print:shadow-none print:rounded-none print:p-0 print-container bg-white">
                 <div className="flex justify-between items-center mb-6 print:hidden">
-                    <Button variant="outline" onClick={() => setIsSetupComplete(false)} className="text-sm">← Back to Setup</Button>
-                    <div className="flex gap-2">
-                        <Button variant={currentView === "monthly" ? "default" : "outline"} onClick={() => setCurrentView("monthly")}>Monthly View</Button>
-                        <Button variant={currentView === "annual" ? "default" : "outline"} onClick={() => setCurrentView("annual")}>Annual View</Button>
-                    </div>
-                    <Button onClick={() => window.print()} className="bg-purple-600 hover:bg-purple-700">Print</Button>
-                </div>
+    <Button variant="outline" onClick={() => setIsSetupComplete(false)} className="text-sm">← Back to Setup</Button>
+    <div className="flex gap-2">
+        <Button variant={currentView === "monthly" ? "default" : "outline"} onClick={() => setCurrentView("monthly")}>Monthly View</Button>
+        <Button variant={currentView === "annual" ? "default" : "outline"} onClick={() => setCurrentView("annual")}>Annual View</Button>
+    </div>
+    <div className="flex gap-2">
+        {sharedData.length > 0 && (
+            <Button 
+                variant="outline" 
+                onClick={() => setShowSharedData(true)} 
+                className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative"
+            >
+                Shared Data
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {sharedData.length}
+                </span>
+            </Button>
+        )}
+        <Button 
+            onClick={() => setShowShareModal(true)} 
+            className="bg-green-600 hover:bg-green-700"
+            disabled={!selectedEmployee || !selectedMonth || !selectedYear}
+        >
+            Share
+        </Button>
+        <Button onClick={() => window.print()} className="bg-purple-600 hover:bg-purple-700">Print</Button>
+    </div>
+</div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 print:hidden">
                     <div>
                         <label className="block text-sm font-medium mb-1">Employee</label>
@@ -752,6 +1002,19 @@ const saveCurrentMonthData = async () => {
                 </div>
                 <PrintLayout />
             </div>
+            {/* Add these modals before the closing </div> tags */}
+{showShareModal && <ShareModal />}
+{showSharedData && <SharedDataModal />}
+{isLoading && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center gap-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span>Processing...</span>
+            </div>
+        </div>
+    </div>
+)}
         </div>
     );
 };

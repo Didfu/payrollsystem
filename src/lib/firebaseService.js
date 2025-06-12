@@ -127,6 +127,95 @@ export const firebaseService = {
       throw error;
     }
   },
+  // Add these functions to the existing firebaseService object in firebaseService.js
+
+// Sharing functionality
+async sharePayrollData(fromUserId, toEmail, shareData) {
+  try {
+    const shareRef = collection(db, 'sharedPayrollData');
+    
+    await addDoc(shareRef, {
+      fromUserId,
+      toEmail: toEmail.toLowerCase().trim(),
+      shareData,
+      sharedAt: serverTimestamp(),
+      status: 'pending' // pending, accepted, declined
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sharing payroll data:', error);
+    throw error;
+  }
+},
+
+async getSharedPayrollData(userEmail) {
+  try {
+    const shareRef = collection(db, 'sharedPayrollData');
+    const snapshot = await getDocs(shareRef);
+    
+    const sharedData = [];
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.toEmail === userEmail.toLowerCase().trim()) {
+        sharedData.push({
+          id: doc.id,
+          ...data
+        });
+      }
+    });
+    
+    return sharedData;
+  } catch (error) {
+    console.error('Error getting shared payroll data:', error);
+    throw error;
+  }
+},
+
+async acceptSharedData(shareId, userId, shareData) {
+  try {
+    // Add the shared employee to user's employees if not exists
+    const employeesRef = collection(db, 'users', userId, 'employees');
+    const employeeDocRef = doc(employeesRef, shareData.employee.id);
+    
+    await setDoc(employeeDocRef, {
+      ...shareData.employee,
+      // Only add sharedFrom if it exists and is not undefined
+      ...(shareData.fromUserId && { sharedFrom: shareData.fromUserId }),
+      addedAt: serverTimestamp()
+    }, { merge: true });
+    
+    // Add the payroll data
+    if (shareData.payrollData) {
+      const recordId = `${shareData.employee.id}_${shareData.year}_${shareData.month}`;
+      const payrollDocRef = doc(db, 'users', userId, 'monthlyPayrollData', recordId);
+      
+      await setDoc(payrollDocRef, {
+        employeeId: shareData.employee.id,
+        year: shareData.year,
+        month: shareData.month,
+        ...shareData.payrollData,
+        // Only add sharedFrom if it exists and is not undefined
+        ...(shareData.fromUserId && { sharedFrom: shareData.fromUserId }),
+        timestamp: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+    
+    // Update share status
+    const shareDocRef = doc(db, 'sharedPayrollData', shareId);
+    await setDoc(shareDocRef, {
+      status: 'accepted',
+      acceptedAt: serverTimestamp(),
+      acceptedBy: userId
+    }, { merge: true });
+    
+    return true;
+  } catch (error) {
+    console.error('Error accepting shared data:', error);
+    throw error;
+  }
+},
 
   // User profile management
   async updateUserProfile(userId, userData) {
