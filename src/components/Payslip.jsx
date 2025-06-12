@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 
 const printStyles = `@media print { @page { margin: 0.75in 0.5in; size: A4; } body { padding: 0 !important; } .pay-section { border: 1px solid black !important; margin-bottom: 12px !important; } .print-page-break { page-break-after: always; } .print-page-break-before { page-break-before: always; } .print-header { margin-bottom: 12px !important; text-align: center; } .print-header h1 { font-size: 18px !important; margin-bottom: 4px !important; font-weight: bold; } .print-header h2 { font-size: 16px !important; margin: 4px 0 !important; font-weight: bold; } .print-header p { font-size: 11px !important; margin: 2px 0 !important; } .print-header .border-t { border-top: 2px solid black !important; border-bottom: 2px solid black !important; padding: 8px 0 !important; margin: 8px 0 !important; } .employee-details { margin-bottom: 12px !important; font-size: 11px !important; } .employee-details .grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; } .employee-details .space-y-1 > * + * { margin-top: 2px !important; } .employee-details p { display: flex !important; margin: 2px 0 !important; } .employee-details span:first-child { width: 120px !important; font-weight: 600; flex-shrink: 0; } .pay-section { border: 2px solid black !important; margin-bottom: 12px !important; } .pay-section h3 { font-size: 12px !important; padding: 6px 8px !important; margin: 0 !important; background: #f0f0f0 !important; border-bottom: 1px solid black !important; font-weight: bold; } .pay-section .p-3 { padding: 8px !important; } .pay-section .space-y-2 > * + * { margin-top: 3px !important; } .pay-section .text-sm { font-size: 11px !important; } .pay-section .border-t { border-top: 1px solid black !important; padding-top: 6px !important; margin-top: 6px !important; } .pay-details-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; } .net-pay-section { margin-top: 12px !important; padding: 8px !important; border: 3px solid black !important; background: white !important; } .summary-cards .bg-blue-50, .summary-cards .bg-green-50, .summary-cards .bg-purple-50 { padding: 8px !important; } .monthly-section { margin-bottom: 32px !important; } .annual-section { margin-top: 32px !important; } .print-page-break-before { page-break-before: auto !important; } .net-pay-section .text-xl { font-size: 16px !important; font-weight: bold; } .net-pay-section .text-sm { font-size: 10px !important; margin-top: 6px !important; } .annual-table { font-size: 10px !important; width: 100% !important; border-collapse: collapse !important; margin-top: 12px !important; } .annual-table th, .annual-table td { border: 1px solid black !important; padding: 4px 6px !important; text-align: left; } .annual-table th { background: #e0e0e0 !important; font-weight: bold !important; } .annual-table td:not(:first-child) { text-align: right !important; } .monthly-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 8px !important; margin-top: 12px !important; page-break-inside: avoid; } .monthly-grid > div { border: 1px solid black !important; padding: 6px !important; font-size: 9px !important; text-align: center; } .monthly-grid .selected-month { border: 2px solid black !important; } .monthly-grid .font-semibold { font-size: 9px !important; font-weight: bold !important; margin-bottom: 2px !important; } .monthly-grid .text-lg { font-size: 11px !important; font-weight: bold !important; } .print-only { display: block !important; } .screen-only { display: none !important; } .print-section { page-break-inside: avoid; margin-bottom: 24px !important; } .monthly-section, .annual-section { display: block !important; } .section-heading { font-size: 14px !important; font-weight: bold !important; margin: 12px 0 8px 0 !important; border-bottom: 1px solid black !important; padding-bottom: 4px !important; } } @media screen { .print-only { display: none !important; } .screen-only { display: block !important; } }`;
 const months = ["April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February", "March"];
-const earningCategories = ["Basic", "House Rent Allowance", "Other Allowance", "Car Allowance", "Interest Subsidy", "Performance Pay", "Long Term Incentive Plan", "Miscellaneous Allowance", "Mobile Handset Allowance"];
+const earningCategories = ["Basic", "Dearness Allowance","House Rent Allowance", "Other Allowance", "Car Allowance", "Interest Subsidy", "Performance Pay", "Long Term Incentive Plan", "Miscellaneous Allowance", "Mobile Handset Allowance"];
 const defaultMonthlyEarnings = () => Object.fromEntries(earningCategories.map(cat => [cat, 0]));
 const initialEmployeeState = { name: "", code: "", department: "", designation: "", grade: "", dob: "", doj: "", location: "", bank: "", costCenter: "", pan: "", pf: "", esi: "", heading: "", address: "", basicSalary: 20000.0, pfUan: "" };
 
@@ -23,8 +23,26 @@ const Payslip = ({ user }) => {
     const [currentView, setCurrentView] = useState("monthly");
     const [employeeData, setEmployeeData] = useState({}); // This stores data with normalized year keys (e.g., '2025')
     const [monthlyEarnings, setMonthlyEarnings] = useState(defaultMonthlyEarnings());
-    const [deductions, setDeductions] = useState({ incomeTax: 0, pf: 0, professionalTax: 200, benevolence: 2000, esop: 5208, esic: 0, loanRepayment: 0, });
-    const [deductionToggles, setDeductionToggles] = useState({ incomeTax: true, pf: true, professionalTax: true, benevolence: true, esop: true, esic: true, loanRepayment: true, });
+    const [deductions, setDeductions] = useState({
+        pf: 0,
+        esic: 0,
+        professionalTax: 200,
+        loanRepayment: 0,
+        esop: 5208,
+        benevolence: 2000,
+        incomeTax: 0,
+    });
+    
+    // Reordered deductionToggles to match
+    const [deductionToggles, setDeductionToggles] = useState({
+        pf: true,
+        esic: true,
+        professionalTax: true,
+        loanRepayment: true,
+        esop: true,
+        benevolence: true,
+        incomeTax: true,
+    });
     const [typedValue, setTypedValue] = useState("2025-26");
     const [isLoading, setIsLoading] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -235,14 +253,31 @@ const Payslip = ({ user }) => {
         const defaultEarnings = defaultMonthlyEarnings();
         if (selectedEmployee?.basicSalary) defaultEarnings.Basic = selectedEmployee.basicSalary;
         setMonthlyEarnings(monthData.earnings || defaultEarnings);
-        setDeductions(monthData.deductions || { incomeTax: 0, pf: 0, professionalTax: 200, benevolence: 2000, esop: 5208, esic: 0, loanRepayment: 0, });
-        setDeductionToggles(monthData.deductionToggles || { incomeTax: true, pf: true, professionalTax: true, benevolence: true, esop: true, esic: true, loanRepayment: true, });
+        setDeductions(monthData.deductions || { pf: 0,
+        esic: 0,
+        professionalTax: 200,
+        loanRepayment: 0,
+        esop: 5208,
+        benevolence: 2000,
+        incomeTax: 0, });
+        setDeductionToggles(monthData.deductionToggles || { pf: true,
+        esic: true,
+        professionalTax: true,
+        loanRepayment: true,
+        esop: true,
+        benevolence: true,
+        incomeTax: true, });
     }, [selectedEmpId, selectedMonth, selectedYear, employeeData, selectedEmployee]);
 
     useEffect(() => {
+        if (!monthlyEarnings || typeof monthlyEarnings !== 'object') {
+            // console.warn("monthlyEarnings is not a valid object during deduction calculation, skipping."); // For debugging
+            return; // Exit early if monthlyEarnings is not an object
+        }
         const gross = Object.values(monthlyEarnings).reduce((s, v) => s + v, 0);
         const basic = monthlyEarnings["Basic"] || 0;
-        setDeductions((prev) => ({ ...prev, incomeTax: Math.round(gross * 0.3), pf: Math.ceil(basic * 0.12), esic: basic * 0.0075, }));
+        const dear = monthlyEarnings["Dearness Allowance"] || 0;
+        setDeductions((prev) => ({ ...prev, incomeTax: Math.round(gross * 0.3), pf: Math.ceil((basic+dear) * 0.12), esic: basic * 0.0075, }));
     }, [monthlyEarnings]);
 
     const grossEarning = Object.values(monthlyEarnings).reduce((s, v) => s + v, 0);
@@ -447,7 +482,16 @@ const Payslip = ({ user }) => {
                 <div className="border print:border-black pay-section">
                     <h3 className="font-bold bg-gray-100 p-3 print:bg-gray-200 print:p-2 print:text-sm border-b print:border-black">DEDUCTIONS</h3>
                     <div className="p-3 print:p-2 space-y-2 print:space-y-1">
-                        {Object.entries(deductions).map(([key, amount]) => {
+                        {[
+                            "pf",
+                            "esic",
+                            "professionalTax", // Ensure this key matches your state
+                            "loanRepayment",   // Ensure this key matches your state
+                            "esop",
+                            "benevolence",
+                            "incomeTax",
+                        ].map((key) => {
+                            const amount = deductions[key] || 0;
                             if (!deductionToggles[key] || amount === 0) return null;
                             const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                             return (
