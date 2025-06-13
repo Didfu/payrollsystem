@@ -43,6 +43,21 @@ const Payslip = ({ user }) => {
         benevolence: true,
         incomeTax: true,
     });
+    const [tdsDeductions, setTdsDeductions] = useState({
+    'April-2023': 496078.00,
+    'May-2023': 104157.00,
+    'June-2023': 104124.00,
+    'July-2023': 104124.00,
+    'August-2023': 104123.00,
+    'September-2023': 104124.00,
+    'October-2023': 322882.00,
+    'November-2023': 101906.00,
+    'December-2023': 101906.00,
+    'January-2024': 88704.00,
+    'February-2024': 86782.00,
+    'March-2024': 168585.00,
+    'Tax Deducted on Perq.': 0.00
+});
     const [typedValue, setTypedValue] = useState("2025-26");
     const [isLoading, setIsLoading] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -50,6 +65,28 @@ const Payslip = ({ user }) => {
     const [shareEmail, setShareEmail] = useState("");
     const [sharedData, setSharedData] = useState([]);
     const [showSharedData, setShowSharedData] = useState(false);
+    // Add this after your existing state declarations
+const [taxDeductions, setTaxDeductions] = useState({
+    standardDeduction: 75000,
+    professionalTax: 2500,
+    underChapterVIA: 0,
+    anyOtherIncome: 0,
+    taxableIncome: 0,
+    totalTax: 0,
+    taxRebate: 0,
+    surcharge: 0,
+    taxDue: 0,
+    healthAndEducationCess: 0,
+    netTax: 0,
+    taxDeductedPreviousEmployer: 0,
+    taxDeductedOnPerq: 0,
+    taxDeductedOnAnyOtherIncome: 0,
+    taxDeductedTillDate: 0,
+    taxToBeDeducted: 0,
+    taxPerMonth: 0,
+    taxOnNonRecurringEarnings: 0,
+    taxDeductionForThisMonth: 0
+});
 
     // Helper function to normalize the year string
     const getNormalizedYear = (yearString) => {
@@ -267,6 +304,30 @@ const Payslip = ({ user }) => {
         esop: true,
         benevolence: true,
         incomeTax: true, });
+        setTdsDeductions(monthData.tdsDeductions || {
+    'April-2023': 496078.00,
+    'May-2023': 104157.00,
+    'June-2023': 104124.00,
+    'July-2023': 104124.00,
+    'August-2023': 104123.00,
+    'September-2023': 104124.00,
+    'October-2023': 322882.00,
+    'November-2023': 101906.00,
+    'December-2023': 101906.00,
+    'January-2024': 88704.00,
+    'February-2024': 86782.00,
+    'March-2024': 168585.00,
+    'Tax Deducted on Perq.': 0.00
+});
+
+        setTaxDeductions(monthData.taxDeductions || {
+        standardDeduction: 75000,
+        professionalTax: 2500, underChapterVIA: 0, anyOtherIncome: 0, taxableIncome: 0,
+        totalTax: 0, taxRebate: 0, surcharge: 0, taxDue: 0, healthAndEducationCess: 0,
+        netTax: 0, taxDeductedPreviousEmployer: 0, taxDeductedOnPerq: 0,
+        taxDeductedOnAnyOtherIncome: 0, taxDeductedTillDate: 0, taxToBeDeducted: 0,
+        taxPerMonth: 0, taxOnNonRecurringEarnings: 0, taxDeductionForThisMonth: 0
+    });
     }, [selectedEmpId, selectedMonth, selectedYear, employeeData, selectedEmployee]);
 
     useEffect(() => {
@@ -328,7 +389,7 @@ const Payslip = ({ user }) => {
         setIsLoading(true);
         try {
             const normalizedYear = getNormalizedYear(selectedYear); // Use normalized year for saving
-            await firebaseService.saveMonthlyData(user.uid, selectedEmpId, normalizedYear, selectedMonth, { earnings: { ...monthlyEarnings }, deductions: { ...deductions }, deductionToggles: { ...deductionToggles } });
+            await firebaseService.saveMonthlyData(user.uid, selectedEmpId, normalizedYear, selectedMonth, { earnings: { ...monthlyEarnings }, deductions: { ...deductions }, deductionToggles: { ...deductionToggles }, taxDeductions: { ...taxDeductions },tdsDeductions: { ...tdsDeductions } });
             
             // Update local state with the normalized year key
             setEmployeeData((prev) => ({
@@ -341,6 +402,8 @@ const Payslip = ({ user }) => {
                             earnings: { ...monthlyEarnings },
                             deductions: { ...deductions },
                             deductionToggles: { ...deductionToggles },
+                            taxDeductions: { ...taxDeductions },
+                            tdsDeductions: { ...tdsDeductions }
                         },
                     },
                 },
@@ -374,6 +437,30 @@ const Payslip = ({ user }) => {
                             <p className="text-xl font-bold text-purple-600 mb-1">₹{Object.values(annualData).reduce((s, i) => s + ((i?.gross || 0) + (i?.projectedGross || 0)), 0).toLocaleString("en-IN")}</p>
                             <p className="text-sm text-purple-600">Complete year</p>
                         </div>
+                        </div>
+                        <div className="mt-8">
+                        <h3 className="font-bold mb-4 section-heading">Monthly Breakdown ({selectedYear})</h3>
+                        <div className="grid grid-cols-6 gap-3 ">
+                            {months.map((month) => {
+                                const normalizedSelectedYearForMonthlyBreakdown = getNormalizedYear(selectedYear); // Crucial for monthly breakdown
+                                const mData = employeeData[selectedEmpId]?.[normalizedSelectedYearForMonthlyBreakdown]?.[month];
+                                const mTotal = mData ? Object.values(mData.earnings).reduce((s, v) => s + v, 0) : 0;
+                                const hasData = mTotal > 0;
+                                return (
+                                    <div
+                                        key={month}
+                                        className={`border-2 p-3 rounded-lg transition-all hover:shadow-md cursor-pointer ${hasData ? "bg-green-50 border-green-300 hover:bg-green-100" : "bg-gray-50 border-gray-300 hover:bg-gray-100"} ${selectedMonth === month ? "ring-2 ring-green-500" : ""}`}
+                                        onClick={() => { if (hasData) { setSelectedMonth(month); setCurrentView("monthly"); } }}
+                                    >
+                                        <div className="font-medium text-sm mb-2 text-center">{month}</div>
+                                        <div className={`text-base font-bold text-center ${hasData ? "text-green-700" : "text-gray-400"}`}>
+                                            {hasData ? `₹${Math.round(mTotal).toLocaleString("en-IN")}` : "No data"}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    
                     </div>
                     <h3 className="font-bold mb-4 mt-6 section-heading">Annual Earnings Summary</h3>
                     <div className="overflow-x-auto">
@@ -400,7 +487,7 @@ const Payslip = ({ user }) => {
                                         </tr>
                                     );
                                 })}
-                                {/* Removed the extra null here to prevent a warning */}
+                                 
                                 <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
                                     <td className="border border-gray-300 p-3 text-right font-bold">Total Annual</td>
                                     <td className="border border-gray-300 p-3 text-right font-bold">₹{Object.values(annualData).reduce((s, i) => s + (i?.gross || 0), 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -410,33 +497,206 @@ const Payslip = ({ user }) => {
                             </tbody>
                         </table>
                     </div>
+                    
                     <div className="mt-8">
-                        <h3 className="font-bold mb-4 section-heading">Monthly Breakdown ({selectedYear})</h3>
-                        <div className="grid grid-cols-6 gap-3 ">
-                            {months.map((month) => {
-                                const normalizedSelectedYearForMonthlyBreakdown = getNormalizedYear(selectedYear); // Crucial for monthly breakdown
-                                const mData = employeeData[selectedEmpId]?.[normalizedSelectedYearForMonthlyBreakdown]?.[month];
-                                const mTotal = mData ? Object.values(mData.earnings).reduce((s, v) => s + v, 0) : 0;
-                                const hasData = mTotal > 0;
-                                return (
-                                    <div
-                                        key={month}
-                                        className={`border-2 p-3 rounded-lg transition-all hover:shadow-md cursor-pointer ${hasData ? "bg-green-50 border-green-300 hover:bg-green-100" : "bg-gray-50 border-gray-300 hover:bg-gray-100"} ${selectedMonth === month ? "ring-2 ring-green-500" : ""}`}
-                                        onClick={() => { if (hasData) { setSelectedMonth(month); setCurrentView("monthly"); } }}
-                                    >
-                                        <div className="font-medium text-sm mb-2 text-center">{month}</div>
-                                        <div className={`text-base font-bold text-center ${hasData ? "text-green-700" : "text-gray-400"}`}>
-                                            {hasData ? `₹${Math.round(mTotal).toLocaleString("en-IN")}` : "No data"}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
+                    <TaxDeductionTable />
+                </div>
+
                 </>
             )}
         </div>
     );
+    // Add this new component after the AnnualReportBlock function
+const TaxDeductionTable = () => {
+    const taxDeductionFields = [
+        { key: 'standardDeduction', label: 'Standard Deduction' },
+        { key: 'professionalTax', label: 'Professional Tax' },
+        { key: 'underChapterVIA', label: 'Under Chapter VI-A' },
+        { key: 'anyOtherIncome', label: 'Any Other Income' },
+        { key: 'taxableIncome', label: 'Taxable Income' },
+        { key: 'totalTax', label: 'Total Tax' },
+        { key: 'taxRebate', label: 'Tax Rebate u/s 87a' },
+        { key: 'surcharge', label: 'Surcharge' },
+        { key: 'taxDue', label: 'Tax Due' },
+        { key: 'healthAndEducationCess', label: 'Health and Education Cess' },
+        { key: 'netTax', label: 'Net Tax' },
+        { key: 'taxDeductedPreviousEmployer', label: 'Tax Deducted (Previous Employer)' },
+        { key: 'taxDeductedOnPerq', label: 'Tax Deducted on Perq.' },
+        { key: 'taxDeductedOnAnyOtherIncome', label: 'Tax Deducted on Any Other Income.' },
+        { key: 'taxDeductedTillDate', label: 'Tax Deducted Till Date' },
+        { key: 'taxToBeDeducted', label: 'Tax to be Deducted' },
+        { key: 'taxPerMonth', label: 'Tax/Month' },
+        { key: 'taxOnNonRecurringEarnings', label: 'Tax on Non-Recurring Earnings' },
+        { key: 'taxDeductionForThisMonth', label: 'Tax Deduction for this month' }
+    ];
+
+    const updateTaxDeduction = (key, value) => {
+        setTaxDeductions(prev => ({
+            ...prev,
+            [key]: parseFloat(value) || 0
+        }));
+    };
+
+    return (
+        <div className="mb-6 print:mb-4">
+            <h3 className="font-bold mb-4 section-heading">Tax Deductions & TDS Summary</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Tax Deductions Table */}
+                <div>
+                    <h4 className="font-semibold mb-3 text-sm">Tax Deductions</h4>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse border border-gray-300 text-sm annual-table">
+                            <colgroup>
+                                <col className="w-3/4" />
+                                <col className="w-1/4" />
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th className="border border-gray-300 p-3 text-left font-semibold">Description</th>
+                                    <th className="border border-gray-300 p-3 text-right font-semibold w-32">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {taxDeductionFields.map(({ key, label }) => (
+                                    <tr key={key}>
+                                        <td className="border border-gray-300 p-3 font-medium">{label}</td>
+                                        <td className="border border-gray-300 p-3 text-right w-32">
+                                            <span className="screen-only">
+                                                <input
+                                                    type="number"
+                                                    defaultValue={taxDeductions[key] || 0}
+                                                    onBlur={(e) => updateTaxDeduction(key, e.target.value)}
+                                                    className="w-full text-right border-0 bg-transparent focus:outline-1px"
+                                                    step="0.01"
+                                                />
+                                            </span>
+                                            <span className="print-only">
+                                                ₹{(taxDeductions[key] || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* TDS Deducted Monthly Table */}
+                <div>
+                    <TDSDeductedMonthlyTable />
+                </div>
+            </div>
+        </div>
+    );
+};
+const TDSDeductedMonthlyTable = () => {
+    const [tdsDeductions, setTdsDeductions] = useState([]);
+
+    const addRow = () => {
+        setTdsDeductions(prev => [...prev, { month: '', amount: 0 }]);
+    };
+
+    const removeRow = (index) => {
+        setTdsDeductions(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const updateRow = (index, field, value) => {
+        setTdsDeductions(prev => 
+            prev.map((row, i) => 
+                i === index 
+                    ? { ...row, [field]: field === 'amount' ? parseFloat(value) || 0 : value }
+                    : row
+            )
+        );
+    };
+
+    const totalTds = tdsDeductions.reduce((sum, row) => sum + (row.amount || 0), 0);
+
+    return (
+        <div className="mb-6 print:mb-4">
+            <h3 className="font-bold mb-4 section-heading">TDS Deducted Monthly</h3>
+            <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-300 text-sm annual-table">
+                    <thead>
+                        <tr>
+                            <th className="border border-gray-300 p-3 text-left font-semibold">Month</th>
+                            <th className="border border-gray-300 p-3 text-right font-semibold">Amount</th>
+                            <th className="border border-gray-300 p-3 text-center font-semibold print:hidden">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tdsDeductions.map((row, index) => (
+                            <tr key={index}>
+                                <td className="border border-gray-300 p-3 font-medium">
+                                    <div className="print:hidden">
+                                        <input
+                                            type="text"
+                                            value={row.month}
+                                            onChange={(e) => updateRow(index, 'month', e.target.value)}
+                                            placeholder="Enter month/period"
+                                            className="w-full border-0 bg-transparent focus:outline-1px font-medium"
+                                        />
+                                    </div>
+                                    <div className="hidden print:block">
+                                        {row.month}
+                                    </div>
+                                </td>
+                                <td className="border border-gray-300 p-3 text-right">
+                                    <div className="print:hidden">
+                                        <input
+                                            type="number"
+                                            value={row.amount}
+                                            onChange={(e) => updateRow(index, 'amount', e.target.value)}
+                                            placeholder="0.00"
+                                            className="w-full text-right border-0 bg-transparent focus:outline-1px"
+                                            step="0.01"
+                                        />
+                                    </div>
+                                    <div className="hidden print:block">
+                                        {row.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                </td>
+                                <td className="border border-gray-300 p-3 text-center print:hidden">
+                                    <button
+                                        onClick={() => removeRow(index)}
+                                        className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                        title="Remove row"
+                                    >
+                                        ×
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        {tdsDeductions.length === 0 && (
+                            <tr className="print:hidden">
+                                <td colSpan="3" className="border border-gray-300 p-6 text-center text-gray-500">
+                                    No entries yet. Click "Add Row" to start.
+                                </td>
+                            </tr>
+                        )}
+                        {tdsDeductions.length > 0 && (
+                            <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
+                                <td className="border border-gray-300 p-3 text-right font-bold">Total</td>
+                                <td className="border border-gray-300 p-3 text-right font-bold text-blue-700">
+                                    {totalTds.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                                <td className="border border-gray-300 p-3 print:hidden"></td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            <div className="mt-4 print:hidden">
+                <button
+                    onClick={addRow}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium"
+                >
+                    Add Row
+                </button>
+            </div>
+        </div>
+    );
+};
 
     const MonthlyPayslipBlock = () => (
         <div className="mb-6">
@@ -460,54 +720,80 @@ const Payslip = ({ user }) => {
             </div>
             <div className="grid grid-cols-2 gap-6 print:gap-4 pay-details-grid">
                 <div className="border print:border-black pay-section">
-                    <h3 className="font-bold bg-gray-100 p-3 print:bg-gray-200 print:p-2 print:text-sm border-b print:border-black">EARNINGS</h3>
-                    <div className="p-3 print:p-2 space-y-2 print:space-y-1">
-                        {earningCategories.map((category) => {
-                            const amount = monthlyEarnings[category] || 0;
-                            if (amount === 0) return null;
-                            return (
-                                <div key={category} className="flex justify-between text-sm print:text-xs">
-                                    <span>{category}</span>
-                                    <span className="font-medium">₹{amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                </div>
-                            );
-                        })}
-                        {/* Removed the extra null here to prevent a warning */}
-                        <div className="border-t pt-2 print:pt-1 font-bold flex justify-between print:border-black">
-                            <span>Total Earnings</span>
-                            <span>₹{grossEarning.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="border print:border-black pay-section">
-                    <h3 className="font-bold bg-gray-100 p-3 print:bg-gray-200 print:p-2 print:text-sm border-b print:border-black">DEDUCTIONS</h3>
-                    <div className="p-3 print:p-2 space-y-2 print:space-y-1">
-                        {[
-                            "pf",
-                            "esic",
-                            "professionalTax", // Ensure this key matches your state
-                            "loanRepayment",   // Ensure this key matches your state
-                            "esop",
-                            "benevolence",
-                            "incomeTax",
-                        ].map((key) => {
-                            const amount = deductions[key] || 0;
-                            if (!deductionToggles[key] || amount === 0) return null;
-                            const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                            return (
-                                <div key={key} className="flex justify-between text-sm print:text-xs">
-                                    <span>{label}</span>
-                                    <span className="font-medium">₹{amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                                </div>
-                            );
-                        })}
-                        {/* Removed the extra null here to prevent a warning */}
-                        <div className="border-t pt-2 print:pt-1 font-bold flex justify-between print:border-black">
-                            <span>Total Deductions</span>
-                            <span>₹{grossDeduction.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-                        </div>
-                    </div>
-                </div>
+    <h3 className="font-bold bg-gray-100 p-3 print:bg-gray-200 print:p-2 print:text-sm border-b print:border-black">EARNINGS</h3>
+    <div className="p-3 print:p-2">
+        <table className="w-full border-collapse text-sm">
+            <colgroup>
+                <col className="w-3/4" />
+                <col className="w-1/4" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th className="border border-gray-300 p-2 text-left font-semibold print:border-black">Description</th>
+                    <th className="border border-gray-300 p-2 text-right font-semibold print:border-black">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {earningCategories.map((category) => {
+                    const amount = monthlyEarnings[category] || 0;
+                    if (amount === 0) return null;
+                    return (
+                        <tr key={category}>
+                            <td className="border border-gray-300 p-2 print:border-black">{category}</td>
+                            <td className="border border-gray-300 p-2 text-right font-medium print:border-black">₹{amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                    );
+                })}
+                <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
+                    <td className="border border-gray-300 p-2 font-bold print:border-black">Total Earnings</td>
+                    <td className="border border-gray-300 p-2 text-right font-bold print:border-black">₹{grossEarning.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div className="border print:border-black pay-section">
+    <h3 className="font-bold bg-gray-100 p-3 print:bg-gray-200 print:p-2 print:text-sm border-b print:border-black">DEDUCTIONS</h3>
+    <div className="p-3 print:p-2">
+        <table className="w-full border-collapse text-sm">
+            <colgroup>
+                <col className="w-3/4" />
+                <col className="w-1/4" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th className="border border-gray-300 p-2 text-left font-semibold print:border-black">Description</th>
+                    <th className="border border-gray-300 p-2 text-right font-semibold print:border-black">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {[
+                    "pf",
+                    "esic",
+                    "professionalTax",
+                    "loanRepayment",
+                    "esop",
+                    "benevolence",
+                    "incomeTax",
+                ].map((key) => {
+                    const amount = deductions[key] || 0;
+                    if (!deductionToggles[key] || amount === 0) return null;
+                    const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                    return (
+                        <tr key={key}>
+                            <td className="border border-gray-300 p-2 print:border-black">{label}</td>
+                            <td className="border border-gray-300 p-2 text-right font-medium print:border-black">₹{amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                    );
+                })}
+                <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
+                    <td className="border border-gray-300 p-2 font-bold print:border-black">Total Deductions</td>
+                    <td className="border border-gray-300 p-2 text-right font-bold print:border-black">₹{grossDeduction.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
             </div>
             <div className="mt-6 p-4 bg-gray-50 rounded border-2 border-gray-300 print:bg-white print:border-black print:rounded-none print:mt-4 net-pay-section">
                 <div className="flex justify-between items-center font-bold text-xl print:text-lg">
@@ -542,7 +828,6 @@ const Payslip = ({ user }) => {
                             <input type={field.type || "text"} name={field.name} value={formData[field.name]} onChange={handleChange} className="w-full border rounded px-3 py-2" placeholder={field.placeholder} step={field.step}/>
                         </div>
                     ))}
-                    {/* Removed the extra null here to prevent a warning */}
                 </div>
                 <div className="flex gap-2">
                     <Button onClick={() => onSave(formData)} className={isEditing ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}>{isEditing ? 'Update Employee' : 'Add Employee'}</Button>
@@ -573,7 +858,6 @@ const Payslip = ({ user }) => {
                                 </div>
                             </div>
                         ))}
-                        {/* Removed the extra null here to prevent a warning */}
                     </div>
                 )}
                 <div className="mt-6 flex justify-end">
@@ -596,7 +880,6 @@ const Payslip = ({ user }) => {
                         </div>
                     </div>
                 )}
-                {/* Removed the extra null here to prevent a warning */}
                 <div className="p-4 sm:p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
                     <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
                         <div className="flex justify-between items-center mb-4 sm:mb-6">
@@ -604,7 +887,6 @@ const Payslip = ({ user }) => {
                             {sharedData.length > 0 && (
                                 <Button variant="outline" onClick={() => setShowSharedData(true)} className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative ml-4">Shared Data<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{sharedData.length}</span></Button>
                             )}
-                            {/* Removed the extra null here to prevent a warning */}
                         </div>
                         <p className="text-gray-600 mb-4 sm:mb-6 text-center">Add employees to get started with payslip generation</p>
                         {employees.length > 0 && (
@@ -625,22 +907,20 @@ const Payslip = ({ user }) => {
                                             </div>
                                         </div>
                                     ))}
-                                    {/* Removed the extra null here to prevent a warning */}
                                 </div>
                             </div>
                         )}
-                        {/* Removed the extra null here to prevent a warning */}
                         {showAddEmployee && <EmployeeForm onSave={handleSaveEmployee} onCancel={() => setShowAddEmployee(false)} />}
                         {editingEmployeeId && <EmployeeForm employee={employees.find(e => e.id === editingEmployeeId)} onSave={handleSaveEmployee} onCancel={() => setEditingEmployeeId(null)} />}
                         <div className="flex justify-center gap-4">
                             {!showAddEmployee && !editingEmployeeId && (
                                 <Button onClick={() => setShowAddEmployee(true)} className="bg-blue-600 hover:bg-blue-700">Add New Employee</Button>
                             )}
-                            {/* Removed the extra null here to prevent a warning */}
+                             
                             {employees.length > 0 && !editingEmployeeId && (
                                 <Button onClick={proceedToPayslip} className="bg-green-600 hover:bg-green-700">Proceed to Payslip Generator ({employees.length} employees)</Button>
                             )}
-                            {/* Removed the extra null here to prevent a warning */}
+                             
                         </div>
                     </Card>
                 </div>
@@ -648,13 +928,11 @@ const Payslip = ({ user }) => {
             </>
         );
     }
-    {/* Removed the extra null here to prevent a warning */}
-
     const PrintLayout = () => (
         <div className="print-only">
             {selectedEmployee && (
                 <>
-                    {/* Removed the extra null here to prevent a warning */}
+                     
                     <div className="monthly-section print-section">
                         <div className="text-center mb-4 print-header">
                             <h1 className="text-2xl font-bold mb-2">{selectedEmployee?.heading || "COMPANY NAME"}</h1>
@@ -666,13 +944,12 @@ const Payslip = ({ user }) => {
                         </div>
                         <MonthlyPayslipBlock />
                     </div>
-                    {/* Removed the extra null here to prevent a warning */}
+                     
                     <div className="annual-section print-section mt-8">
                         <AnnualReportBlock />
                     </div>
                 </>
             )}
-            {/* Removed the extra null here to prevent a warning */}
         </div>
     );
 
@@ -699,8 +976,7 @@ const Payslip = ({ user }) => {
             }
             setIsLoading(true);
             try {
-                // sharePayrollData already uses normalizedYear from the firebaseService side
-                // No need to pass payrollData, as it's fetched internally by firebaseService
+
                 await firebaseService.sharePayrollData(user.uid, localEmail.trim(), selectedEmployee.id, getNormalizedYear(selectedYear), selectedMonth);
                 alert(`Payroll data shared successfully with ${localEmail}!`);
                 setShowShareModal(false);
@@ -745,7 +1021,6 @@ const Payslip = ({ user }) => {
                         {sharedData.length > 0 && (
                             <Button variant="outline" onClick={() => setShowSharedData(true)} className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative">Shared Data<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{sharedData.length}</span></Button>
                         )}
-                        {/* Removed the extra null here to prevent a warning */}
                         <Button onClick={() => setShowShareModal(true)} className="bg-green-600 hover:bg-green-700" disabled={!selectedEmployee || !selectedMonth || !selectedYear}>Share</Button>
                         <Button onClick={() => window.print()} className="bg-purple-600 hover:bg-purple-700">Print</Button>
                     </div>
@@ -757,7 +1032,6 @@ const Payslip = ({ user }) => {
                             <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
                             <SelectContent>
                                 {employees.map((emp) => <SelectItem key={emp.id} value={emp.id}>{emp.name} ({emp.code})</SelectItem>)}
-                                {/* Removed the extra null here to prevent a warning */}
                             </SelectContent>
                         </Select>
                     </div>
@@ -767,7 +1041,6 @@ const Payslip = ({ user }) => {
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 {months.map((month) => <SelectItem key={month} value={month}>{month}</SelectItem>)}
-                                {/* Removed the extra null here to prevent a warning */}
                             </SelectContent>
                         </Select>
                     </div>
@@ -781,7 +1054,6 @@ const Payslip = ({ user }) => {
         onChange={(e) => {
             const input = e.target.value;
             setTypedValue(input); // Always show what the user typed initially
-
             if (/^\d{4}$/.test(input)) {
                 const startYear = parseInt(input);
                 const endYearShort = ((startYear + 1) % 100).toString().padStart(2, "0");
@@ -789,11 +1061,8 @@ const Payslip = ({ user }) => {
                 setSelectedYear(formatted); // Internally store as YYYY-YY
                 setTypedValue(formatted); // Update typedValue to reflect the formatted year
             } else if (/^\d{4}-\d{2}$/.test(input) || input === "") {
-                setSelectedYear(input); // Accept YYYY-YY or empty
-                // typedValue is already 'input' here, so no additional setTypedValue needed
+                setSelectedYear(input);
             }
-            // For invalid input, selectedYear remains its previous valid value,
-            // and typedValue will show the invalid input until the user corrects it.
         }}
         onClick={(e) => e.target.select()} // <--- ADDED: Select all text on click
     />
@@ -818,35 +1087,39 @@ const Payslip = ({ user }) => {
                                                     <input type="number" value={monthlyEarnings[category] || 0} onChange={(e) => updateEarning(category, e.target.value)} className="w-32 border rounded px-2 py-1 text-right text-sm" step="0.01"/>
                                                 </div>
                                             ))}
-                                            {/* Removed the extra null here to prevent a warning */}
                                         </div>
                                     </div>
                                     <div>
-                                        <h3 className="font-bold mb-4">Edit Deductions</h3>
-                                        <div className="space-y-3">
-                                            {Object.entries(deductions).map(([key, amount]) => {
-                                                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                                                return (
-                                                    <div key={key} className="flex justify-between items-center">
-                                                        <div className="flex items-center gap-2">
-                                                            <input type="checkbox" checked={deductionToggles[key]} onChange={() => toggleDeduction(key)} className="rounded"/>
-                                                            <label className="text-sm font-medium">{label}:</label>
-                                                        </div>
-                                                        <input type="number" value={amount} onChange={(e) => setDeductions(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))} className="w-32 border rounded px-2 py-1 text-right text-sm" step="0.01" disabled={!deductionToggles[key]} />
-                                                    </div>
-                                                );
-                                            })}
-                                            {/* Removed the extra null here to prevent a warning */}
-                                        </div>
-                                    </div>
+    <h3 className="font-bold mb-4">Edit Deductions</h3>
+    <div className="space-y-3">
+        {[
+            { key: "pf", label: "Pf" },
+            { key: "esic", label: "Esic" },
+            { key: "professionalTax", label: "Professional Tax" },
+            { key: "loanRepayment", label: "Loan Repayment" },
+            { key: "esop", label: "Esop" },
+            { key: "benevolence", label: "Benevolence" },
+            { key: "incomeTax", label: "Income Tax" }
+        ].map(({ key, label }) => {
+            const amount = deductions[key];
+            return (
+                <div key={key} className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" checked={deductionToggles[key]} onChange={() => toggleDeduction(key)} className="rounded"/>
+                        <label className="text-sm font-medium">{label}:</label>
+                    </div>
+                    <input type="number" value={amount} onChange={(e) => setDeductions(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))} className="w-32 border rounded px-2 py-1 text-right text-sm" step="0.01" disabled={!deductionToggles[key]} />
+                </div>
+            );
+        })}
+    </div>
+</div>
                                 </div>
                             </>
                         )}
-                        {/* Removed the extra null here to prevent a warning */}
                 </div>
                 <PrintLayout />
             </div>
-            {/* Add these modals before the closing </div> tags */}
             {showShareModal && <ShareModal />}
             {showSharedData && <SharedDataModal />}
             {isLoading && (

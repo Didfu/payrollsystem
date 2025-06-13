@@ -12,8 +12,8 @@ function AppContent() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center p-4 bg-white shadow-sm">
+    <div className="">
+      <div className="flex justify-between items-center p-4 bg-white shadow-sm print:hidden">
         <h1 className="text-xl font-bold">SwiftLink</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">{currentUser.email}</span>
