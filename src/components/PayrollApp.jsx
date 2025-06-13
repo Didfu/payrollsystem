@@ -45,7 +45,7 @@ const PayrollApp = () => {
       <div className="bg-white shadow-sm border-b px-4 py-2 print:hidden">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">Payroll System</h1>
+            <h1 className="text-lg font-semibold">SwiftLink</h1>
             <span className="text-sm text-gray-600">
               Welcome, {user.displayName || user.email}
             </span>

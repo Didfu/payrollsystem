@@ -600,7 +600,7 @@ const Payslip = ({ user }) => {
                 <div className="p-4 sm:p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
                     <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
                         <div className="flex justify-between items-center mb-4 sm:mb-6">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-center flex-1">Payroll System Setup</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-center flex-1">Setup</h1>
                             {sharedData.length > 0 && (
                                 <Button variant="outline" onClick={() => setShowSharedData(true)} className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative ml-4">Shared Data<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{sharedData.length}</span></Button>
                             )}

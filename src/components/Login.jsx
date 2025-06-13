@@ -55,7 +55,15 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50"
+      style={{
+        backgroundImage: "url('https://media.giphy.com/media/xT9IgzoKnwFNmISR8I/giphy.gif')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       <Card className="w-full max-w-md p-6">
         <h2 className="text-2xl font-bold text-center mb-6">
           {isSignup ? 'Create Account' : 'Sign In'}
