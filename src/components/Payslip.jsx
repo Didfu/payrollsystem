@@ -13,6 +13,7 @@ const defaultMonthlyEarnings = () => Object.fromEntries(earningCategories.map(ca
 const initialEmployeeState = { name: "", code: "", department: "", designation: "", grade: "", dob: "", doj: "", location: "", bank: "", costCenter: "", pan: "", pf: "", esi: "", heading: "", address: "", basicSalary: 20000.0, pfUan: "" };
 
 const Payslip = ({ user }) => {
+    const [showSummaryPanel, setShowSummaryPanel] = useState(true);
     const [isSetupComplete, setIsSetupComplete] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [showAddEmployee, setShowAddEmployee] = useState(false);
@@ -58,6 +59,8 @@ const Payslip = ({ user }) => {
     'March-2024': 168585.00,
     'Tax Deducted on Perq.': 0.00
 });
+const [expandedEmpId, setExpandedEmpId] = useState(null);
+
     const [typedValue, setTypedValue] = useState("2025-26");
     const [isLoading, setIsLoading] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
@@ -581,7 +584,7 @@ const TaxDeductionTable = () => {
                     </div>
                 </div>
 
-                {/* TDS Deducted Monthly Table */}
+                {/* TDS Deducted Monthly Table - MOVED INSIDE THE GRID */}
                 <div>
                     <TDSDeductedMonthlyTable />
                 </div>
@@ -589,6 +592,7 @@ const TaxDeductionTable = () => {
         </div>
     );
 };
+
 const TDSDeductedMonthlyTable = () => {
     const [tdsDeductions, setTdsDeductions] = useState([]);
 
@@ -613,48 +617,44 @@ const TDSDeductedMonthlyTable = () => {
     const totalTds = tdsDeductions.reduce((sum, row) => sum + (row.amount || 0), 0);
 
     return (
-        <div className="mb-6 print:mb-4">
-            <h3 className="font-bold mb-4 section-heading">TDS Deducted Monthly</h3>
+        <div>
+            <h4 className="font-semibold mb-3 text-sm">TDS Deducted Monthly</h4>
             <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-300 text-sm annual-table">
                     <thead>
                         <tr>
                             <th className="border border-gray-300 p-3 text-left font-semibold">Month</th>
                             <th className="border border-gray-300 p-3 text-right font-semibold">Amount</th>
-                            <th className="border border-gray-300 p-3 text-center font-semibold print:hidden">Action</th>
+                            <th className="border border-gray-300 p-3 text-center font-semibold ">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {tdsDeductions.map((row, index) => (
                             <tr key={index}>
                                 <td className="border border-gray-300 p-3 font-medium">
-                                    <div className="print:hidden">
-                                        <input
-                                            type="text"
-                                            value={row.month}
-                                            onChange={(e) => updateRow(index, 'month', e.target.value)}
-                                            placeholder="Enter month/period"
-                                            className="w-full border-0 bg-transparent focus:outline-1px font-medium"
-                                        />
-                                    </div>
-                                    <div className="hidden print:block">
+                                    <input
+                                        type="text"
+                                        value={row.month}
+                                        onChange={(e) => updateRow(index, 'month', e.target.value)}
+                                        placeholder="Enter month/period"
+                                        className="w-full border-0 bg-transparent focus:outline-1px font-medium "
+                                    />
+                                    <span className="">
                                         {row.month}
-                                    </div>
+                                    </span>
                                 </td>
                                 <td className="border border-gray-300 p-3 text-right">
-                                    <div className="print:hidden">
-                                        <input
-                                            type="number"
-                                            value={row.amount}
-                                            onChange={(e) => updateRow(index, 'amount', e.target.value)}
-                                            placeholder="0.00"
-                                            className="w-full text-right border-0 bg-transparent focus:outline-1px"
-                                            step="0.01"
-                                        />
-                                    </div>
-                                    <div className="hidden print:block">
-                                        {row.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </div>
+                                    <input
+                                        type="number"
+                                        value={row.amount}
+                                        onChange={(e) => updateRow(index, 'amount', e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full text-right border-0 bg-transparent focus:outline-1px "
+                                        step="0.01"
+                                    />
+                                    <span className="">
+                                        ₹{(row.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
                                 </td>
                                 <td className="border border-gray-300 p-3 text-center print:hidden">
                                     <button
@@ -678,9 +678,9 @@ const TDSDeductedMonthlyTable = () => {
                             <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
                                 <td className="border border-gray-300 p-3 text-right font-bold">Total</td>
                                 <td className="border border-gray-300 p-3 text-right font-bold text-blue-700">
-                                    {totalTds.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    ₹{totalTds.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </td>
-                                <td className="border border-gray-300 p-3 print:hidden"></td>
+                                <td className="border border-gray-300 p-3 "></td>
                             </tr>
                         )}
                     </tbody>
@@ -868,66 +868,206 @@ const TDSDeductedMonthlyTable = () => {
     );
 
     if (!isSetupComplete) {
-        return (
-            <>
-                {isLoading && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg">
-                            <div className="flex items-center gap-3">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                <span>Processing...</span>
-                            </div>
-                        </div>
-                    </div>
-                )}
-                <div className="p-4 sm:p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
-                    <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
-                        <div className="flex justify-between items-center mb-4 sm:mb-6">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-center flex-1">Setup</h1>
-                            {sharedData.length > 0 && (
-                                <Button variant="outline" onClick={() => setShowSharedData(true)} className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative ml-4">Shared Data<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{sharedData.length}</span></Button>
-                            )}
-                        </div>
-                        <p className="text-gray-600 mb-4 sm:mb-6 text-center">Add employees to get started with payslip generation</p>
-                        {employees.length > 0 && (
-                            <div className="mb-6">
-                                <h2 className="text-xl font-semibold mb-4">Added Employees ({employees.length})</h2>
-                                <div className="grid gap-4">
-                                    {employees.map((emp) => (
-                                        <div key={emp.id} className="border rounded-lg p-4 flex justify-between items-start">
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-                                                <div><span className="font-medium">Name:</span> {emp.name}</div>
-                                                <div><span className="font-medium">Code:</span> {emp.code}</div>
-                                                <div><span className="font-medium">Department:</span> {emp.department || "N/A"}</div>
-                                                <div><span className="font-medium">Designation:</span> {emp.designation || "N/A"}</div>
-                                            </div>
-                                            <div className="flex gap-2 ml-4">
-                                                <Button variant="outline" size="sm" onClick={() => setEditingEmployeeId(emp.id)}>Edit</Button>
-                                                <Button variant="destructive" size="sm" onClick={() => handleDeleteEmployee(emp.id)}>Delete</Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {showAddEmployee && <EmployeeForm onSave={handleSaveEmployee} onCancel={() => setShowAddEmployee(false)} />}
-                        {editingEmployeeId && <EmployeeForm employee={employees.find(e => e.id === editingEmployeeId)} onSave={handleSaveEmployee} onCancel={() => setEditingEmployeeId(null)} />}
-                        <div className="flex justify-center gap-4">
-                            {!showAddEmployee && !editingEmployeeId && (
-                                <Button onClick={() => setShowAddEmployee(true)} className="bg-blue-600 hover:bg-blue-700">Add New Employee</Button>
-                            )}
-                             
-                            {employees.length > 0 && !editingEmployeeId && (
-                                <Button onClick={proceedToPayslip} className="bg-green-600 hover:bg-green-700">Proceed to Payslip Generator ({employees.length} employees)</Button>
-                            )}
-                             
-                        </div>
-                    </Card>
-                </div>
-                {showSharedData && <SharedDataModal />}
-            </>
-        );
+  const selectedEmployeeData = employees.find(e => e.id === selectedEmpId);
+  const annualSummary = calculateAnnualData();
+  const actualMonths = Object.values(annualSummary)[0]?.actualMonths || 0;
+  const projectedMonths = Object.values(annualSummary)[0]?.projectedMonths || 0;
+  const normalizedYear = getNormalizedYear(selectedYear);
+  const calculateAnnualDataFor = (empId) => {
+  const normalizedYear = getNormalizedYear(selectedYear);
+  const yearData = employeeData[empId]?.[normalizedYear] || {};
+  const totals = {};
+  earningCategories.forEach((cat) => (totals[cat] = { gross: 0, projectedGross: 0 }));
+  let actualMonthsCount = 0;
+  let firstMonth = null;
+  months.forEach((m) => {
+    if (yearData[m]?.earnings) {
+      actualMonthsCount++;
+      if (!firstMonth) firstMonth = yearData[m].earnings;
+      earningCategories.forEach((cat) => {
+        totals[cat].gross += yearData[m].earnings[cat] || 0;
+      });
     }
+  });
+  const remaining = Math.max(0, 12 - actualMonthsCount);
+  if (firstMonth && remaining > 0) {
+    earningCategories.forEach((cat) => {
+      totals[cat].projectedGross = (firstMonth[cat] || 0) * remaining;
+    });
+  }
+  Object.values(totals)[0].actualMonths = actualMonthsCount;
+  Object.values(totals)[0].projectedMonths = remaining;
+  return totals;
+};
+
+
+  return (
+    <>
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span>Processing...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="p-4 sm:p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none">
+        <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
+          <div className="flex justify-between items-center mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-center flex-1">Setup</h1>
+            {sharedData.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setShowSharedData(true)}
+                className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative ml-4"
+              >
+                Shared Data
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {sharedData.length}
+                </span>
+              </Button>
+            )}
+          </div>
+
+          <p className="text-gray-600 mb-4 sm:mb-6 text-center">
+            Add employees to get started with payslip generation
+          </p>
+
+          {employees.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-4">Added Employees ({employees.length})</h2>
+              <div className="grid gap-4">
+                {employees.map((emp) => {
+  const isExpanded = expandedEmpId === emp.id;
+  const empAnnualSummary = calculateAnnualDataFor(emp.id); // we'll define this
+  const actualMonths = Object.values(empAnnualSummary)[0]?.actualMonths || 0;
+  const projectedMonths = Object.values(empAnnualSummary)[0]?.projectedMonths || 0;
+
+  return (
+    <div
+      key={emp.id}
+      className={`border rounded-lg ${isExpanded ? "border-black-500" : ""}`}
+    >
+      {/* Header section */}
+      <div
+        className="p-4 flex justify-between items-start cursor-pointer hover:bg-gray-50"
+        onClick={() => setExpandedEmpId(isExpanded ? null : emp.id)}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+          <div><span className="font-medium">Name:</span> {emp.name}</div>
+          <div><span className="font-medium">Code:</span> {emp.code}</div>
+          <div><span className="font-medium">Department:</span> {emp.department || "N/A"}</div>
+          <div><span className="font-medium">Designation:</span> {emp.designation || "N/A"}</div>
+        </div>
+        <div className="flex gap-2 ml-4">
+          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setEditingEmployeeId(emp.id); }}>Edit</Button>
+          <Button variant="destructive" size="sm" onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(emp.id); }}>Delete</Button>
+        </div>
+      </div>
+
+      {/* Expanded summary section */}
+      {isExpanded && (
+        <div className={`overflow-hidden transition-max-height duration-500 ease-in-out ${
+    isExpanded ? "max-h-[1000px] py-4" : "max-h-0"
+  } bg-gray-50 border-t px-4`}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-800 mb-2 text-sm">Actual Earnings</h4>
+              <p className="text-xl font-bold text-blue-600 mb-1">
+                ₹{Object.values(empAnnualSummary).reduce((s, i) => s + (i?.gross || 0), 0).toLocaleString("en-IN")}
+              </p>
+              <p className="text-sm text-blue-600">{actualMonths} months</p>
+            </div>
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <h4 className="font-medium text-green-800 mb-2 text-sm">Projected Earnings</h4>
+              <p className="text-xl font-bold text-green-600 mb-1">
+                ₹{Object.values(empAnnualSummary).reduce((s, i) => s + (i?.projectedGross || 0), 0).toLocaleString("en-IN")}
+              </p>
+              <p className="text-sm text-green-600">{projectedMonths} months</p>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <h4 className="font-medium text-purple-800 mb-2 text-sm">Total Annual</h4>
+              <p className="text-xl font-bold text-purple-600 mb-1">
+                ₹{Object.values(empAnnualSummary).reduce((s, i) => s + ((i?.gross || 0) + (i?.projectedGross || 0)), 0).toLocaleString("en-IN")}
+              </p>
+              <p className="text-sm text-purple-600">Complete year</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {months.map((month) => {
+              const normalizedYear = getNormalizedYear(selectedYear);
+              const mData = employeeData[emp.id]?.[normalizedYear]?.[month];
+              const mTotal = mData ? Object.values(mData.earnings).reduce((s, v) => s + v, 0) : 0;
+              const hasData = mTotal > 0;
+              return (
+                <div
+                  key={month}
+                  className={`border-2 p-3 rounded-lg text-center cursor-pointer transition ${
+                    hasData ? "bg-green-50 border-green-300 hover:bg-green-100" : "bg-gray-50 border-gray-300 hover:bg-gray-100"
+                  }`}
+                  onClick={() => {
+                    setSelectedEmpId(emp.id);
+                    setSelectedMonth(month);
+                    setIsSetupComplete(true);
+                    setCurrentView("monthly");
+                  }}
+                >
+                  <div className="font-medium text-sm mb-1">{month}</div>
+                  <div className={`text-base font-bold ${hasData ? "text-green-700" : "text-gray-400"}`}>
+                    {hasData ? `₹${Math.round(mTotal).toLocaleString("en-IN")}` : "No data"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})}
+
+              </div>
+            </div>
+          )}
+
+
+
+
+          {showAddEmployee && (
+            <EmployeeForm onSave={handleSaveEmployee} onCancel={() => setShowAddEmployee(false)} />
+          )}
+          {editingEmployeeId && (
+            <EmployeeForm
+              employee={employees.find((e) => e.id === editingEmployeeId)}
+              onSave={handleSaveEmployee}
+              onCancel={() => setEditingEmployeeId(null)}
+            />
+          )}
+
+          <div className="flex justify-center gap-4 mt-8">
+            {!showAddEmployee && !editingEmployeeId && (
+              <Button onClick={() => setShowAddEmployee(true)} className="bg-blue-600 hover:bg-blue-700">
+                Add New Employee
+              </Button>
+            )}
+            {employees.length > 0 && !editingEmployeeId && (
+              <Button onClick={proceedToPayslip} className="bg-green-600 hover:bg-green-700">
+                Proceed to Payslip Generator ({employees.length} employees)
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {showSharedData && <SharedDataModal />}
+    </>
+  );
+}
+
     const PrintLayout = () => (
         <div className="print-only">
             {selectedEmployee && (
