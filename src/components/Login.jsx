@@ -152,21 +152,24 @@ export default function Login() {
           </div>
 
           {/* Google login */}
+          
           <div className="w-1/2 p-8 flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-white to-slate-50">
+          <p className="text-gray-500 text-sm font-medium"> Or sign in with</p>
+          <br></br>
             <Button type="button" onClick={handleGoogleSignIn} disabled={loading} className="w-full h-12 bg-white/90 hover:bg-white backdrop-blur-sm text-gray-700 font-semibold rounded-xl border border-gray-300/60 transition-all duration-200 hover:border-gray-400 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
               <div className="flex items-center justify-center space-x-2">
                 <FcGoogle className="h-5 w-5" />
                 <span>Continue with Google</span>
               </div>
             </Button>
-            <div className="mt-6 text-xs text-gray-400 font-medium text-center">
-              Fast. Secure. Done Right.
-            </div>
+            
           </div>
         </Card>
 
         {/* Footer */}
-        
+        <div className="mt-8 text-center">
+          <p className="text-xs text-slate-400 font-medium">Fast. Secure. Done Right.</p>
+        </div>
       </div>
     </div>
   );
