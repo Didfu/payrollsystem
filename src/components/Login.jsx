@@ -106,10 +106,11 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl shadow-black/30 border border-white/20 flex items-center justify-center">
-            <div className="relative">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full shadow-inner"></div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-red-400 to-red-500 rounded-full shadow-sm"></div>
-            </div>
+            <img
+    src="/SwiftLink.png"
+    alt="SwiftLink Logo"
+    className="w-10 h-10 object-contain rounded-xl"
+  />
           </div>
           <h1 className="text-2xl font-semibold text-white mb-1 tracking-tight">SwiftLink</h1>
           <p className="text-slate-300 text-sm font-medium">Streamlined payroll management</p>
