@@ -810,32 +810,335 @@ const TDSDeductedMonthlyTable = () => {
         </div>
     );
 
-    const EmployeeForm = ({ employee, onSave, onCancel }) => {
-        const [formData, setFormData] = useState(employee || initialEmployeeState);
-        const isEditing = !!employee;
-        const handleChange = (e) => {
-            const { name, value, type } = e.target;
-            setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
-        };
-        const formFields = [{ name: 'name', label: 'Name *', placeholder: 'Enter employee name' },{ name: 'code', label: 'Employee Code *', placeholder: 'Enter employee code' },{ name: 'department', label: 'Department', placeholder: 'Enter department' },{ name: 'designation', label: 'Designation', placeholder: 'Enter designation' },{ name: 'grade', label: 'Grade', placeholder: 'Enter grade' },{ name: 'dob', label: 'Date of Birth', placeholder: 'e.g., 2 Aug 1979' },{ name: 'doj', label: 'Date of Joining', placeholder: 'e.g., 18 Jun 2008' },{ name: 'location', label: 'Location', placeholder: 'Enter location' },{ name: 'bank', label: 'Bank Details', placeholder: 'Account number (Bank name)' },{ name: 'costCenter', label: 'Cost Center', placeholder: 'Enter cost center' },{ name: 'pan', label: 'PAN Number', placeholder: 'Enter PAN number' },{ name: 'pf', label: 'PF Number', placeholder: 'Enter PF number' },{ name: 'esi', label: 'ESI Number', placeholder: "Enter ESI number (or '-')" },{ name: 'pfUan', label: 'PF UAN', placeholder: 'Enter PF UAN' },{ name: 'heading', label: 'Company Name', placeholder: 'Enter company name' },{ name: 'address', label: 'Company Address', placeholder: 'Enter company address' },{ name: 'basicSalary', label: 'Basic Salary', type: 'number', step: '0.01' }];
-        return (
-            <Card className={`p-4 mb-6 ${isEditing ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`}>
-                <h3 className="text-lg font-semibold mb-4">{isEditing ? 'Edit' : 'Add New'} Employee</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {formFields.map(field => (
-                        <div key={field.name}>
-                            <label className="block text-sm font-medium mb-1">{field.label}</label>
-                            <input type={field.type || "text"} name={field.name} value={formData[field.name]} onChange={handleChange} className="w-full border rounded px-3 py-2" placeholder={field.placeholder} step={field.step}/>
-                        </div>
-                    ))}
-                </div>
-                <div className="flex gap-2">
-                    <Button onClick={() => onSave(formData)} className={isEditing ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}>{isEditing ? 'Update Employee' : 'Add Employee'}</Button>
-                    <Button variant="outline" onClick={onCancel}>Cancel</Button>
-                </div>
-            </Card>
-        );
+const initialEmployeeState = {
+  name: '', code: '', department: '', designation: '', grade: '',
+  dob: '', doj: '', location: '', bank: '', costCenter: '',
+  pan: '', pf: '', esi: '', heading: '', address: '',
+  basicSalary: 20000.0, pfUan: '', companyId: '', companyLogo: null
+};
+
+const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
+  const [formData, setFormData] = useState(employee || initialEmployeeState);
+  const [companies, setCompanies] = useState([]); // Single array for all companies
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [newCompany, setNewCompany] = useState({ name: '', address: '', logo: null });
+
+  const isEditing = !!employee;
+
+  useEffect(() => {
+    const loadCompanies = async () => {
+      try {
+        setIsLoadingCompanies(true);
+        // This now gets both templates and user companies
+        const allCompanies = await firebaseService.getCompanies(user.uid);
+        setCompanies(allCompanies);
+      } catch (error) {
+        console.error('Error loading companies:', error);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
     };
+    loadCompanies();
+  }, [user.uid]);
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseFloat(value) || 0 : value
+    }));
+  };
+
+  const handleCompanySelect = async (e) => {
+  const selectedCompanyId = e.target.value;
+  
+  if (selectedCompanyId) {
+    const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+    
+    if (selectedCompany) {
+      // Simply use the selected company directly
+      setFormData(prev => ({
+        ...prev,
+        companyId: selectedCompany.id,
+        heading: selectedCompany.name,
+        address: selectedCompany.address,
+        companyLogo: selectedCompany.logo || null
+      }));
+    }
+  } else {
+    // Clear selection
+    setFormData(prev => ({
+      ...prev,
+      companyId: '', heading: '', address: '', companyLogo: null
+    }));
+  }
+};
+
+  const handleNewCompanyChange = (e) => {
+    const { name, value } = e.target;
+    setNewCompany(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 500 * 1024) {
+        alert('Logo must be under 500KB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        alert('Must be an image');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setNewCompany(prev => ({ ...prev, logo: e.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddCompany = async () => {
+    if (!newCompany.name.trim()) {
+      alert('Company name is required');
+      return;
+    }
+    try {
+      const added = await firebaseService.addCompany(user.uid, newCompany);
+      setCompanies(prev => [...prev, { ...added, isUserCompany: true }]);
+      setFormData(prev => ({
+        ...prev,
+        companyId: added.id,
+        heading: added.name,
+        address: added.address,
+        companyLogo: added.logo
+      }));
+      setNewCompany({ name: '', address: '', logo: null });
+      setShowAddCompany(false);
+    } catch (error) {
+      console.error('Error adding company:', error);
+      alert('Failed to add company. Please try again.');
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.code.trim()) {
+      alert('Name and employee code are required');
+      return;
+    }
+    try {
+      await onSave(formData);
+    } catch (err) {
+      console.error('Error saving employee:', err);
+      alert('Failed to save employee. Please try again.');
+    }
+  };
+
+  if (isLoadingCompanies) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <div className="text-gray-600">Loading companies...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        {isEditing ? 'Edit Employee' : 'Add New Employee'}
+      </h2>
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Company Selection Section */}
+        <div className="bg-gray-50 p-4 rounded-lg border">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">Company Information</h3>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Company
+            </label>
+            <select
+              value={formData.companyId || ''}
+              onChange={handleCompanySelect}
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select a company...</option>
+              
+              {/* All companies are now global */}
+              {companies.map(company => (
+                <option key={company.id} value={company.id}>
+                  {company.name} - {company.address}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {formData.heading && (
+            <div className="bg-white p-4 rounded border border-gray-200">
+              <h4 className="font-medium text-gray-800 mb-2">Selected Company</h4>
+              <div className="flex items-start space-x-4">
+                {formData.companyLogo && (
+                  <img 
+                    src={formData.companyLogo} 
+                    alt="Company Logo" 
+                    className="h-16 w-16 object-contain border rounded"
+                  />
+                )}
+                <div>
+                  <p className="text-sm"><strong>Name:</strong> {formData.heading}</p>
+                  <p className="text-sm"><strong>Address:</strong> {formData.address}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowAddCompany(!showAddCompany)}
+            className="mt-4 text-blue-600 hover:text-blue-800 text-sm font-medium"
+          >
+            {showAddCompany ? '✕ Cancel' : '+ Add New Company'}
+          </button>
+
+          {showAddCompany && (
+            <div className="mt-4 p-4 border border-gray-300 rounded-md bg-white">
+              <h4 className="font-medium text-gray-800 mb-3">Add New Company</h4>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={newCompany.name}
+                    onChange={handleNewCompanyChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter company name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={newCompany.address}
+                    onChange={handleNewCompanyChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter company address"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Logo (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {newCompany.logo && (
+                    <img 
+                      src={newCompany.logo} 
+                      alt="Preview" 
+                      className="mt-2 h-12 w-12 object-contain border rounded"
+                    />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddCompany}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:ring-2 focus:ring-green-500 font-medium"
+                >
+                  Save Company
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Employee Details Section */}
+        <div className="bg-gray-50 p-4 rounded-lg border">
+          <h3 className="text-lg font-semibold mb-4 text-gray-700">Employee Details</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { field: 'name', label: 'Full Name', required: true},
+              { field: 'code', label: 'Employee Code', required: true },
+              { field: 'department', label: 'Department' },
+              { field: 'designation', label: 'Designation' },
+              { field: 'grade', label: 'Grade' },
+              { field: 'dob', label: 'Date of Birth', type: 'date' },
+              { field: 'doj', label: 'Date of Joining', type: 'date' },
+              { field: 'location', label: 'Location' },
+              { field: 'bank', label: 'Bank' },
+              { field: 'costCenter', label: 'Cost Center' },
+              { field: 'pan', label: 'PAN Number' },
+              { field: 'pf', label: 'PF Number' },
+              { field: 'esi', label: 'ESI Number' },
+              { field: 'pfUan', label: 'PF UAN' }
+            ].map(({ field, label, required, type = 'text' }) => (
+              <div key={field}>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {label} {required && <span className="text-red-500">*</span>}
+                </label>
+                <input
+                  type={type}
+                  name={field}
+                  value={formData[field] || ''}
+                  onChange={handleChange}
+                  required={required}
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={`Enter ${label.toLowerCase()}`}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Basic Salary <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="basicSalary"
+              value={formData.basicSalary}
+              onChange={handleChange}
+              min="0"
+              step="0.01"
+              required
+              className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter basic salary"
+            />
+          </div>
+        </div>
+
+        {/* Form Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+          <button 
+            type="submit" 
+            className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 font-medium transition-colors"
+          >
+            {isEditing ? 'Update Employee' : 'Add Employee'}
+          </button>
+          <button 
+            type="button" 
+            onClick={onCancel} 
+            className="flex-1 bg-gray-300 text-gray-800 px-6 py-3 rounded-md hover:bg-gray-400 focus:ring-2 focus:ring-gray-300 font-medium transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
     const SharedDataModal = () => (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -849,7 +1152,7 @@ const TDSDeductedMonthlyTable = () => {
                             <div key={item.id} className="border rounded-lg p-4">
                                 <div className="grid grid-cols-2 gap-4 mb-3">
                                     <div><strong>Employee:</strong> {item.shareData.employee.name}</div>
-                                    <div><strong>Period:</strong> {item.shareData.month} {item.shareData.year}</div>
+                                    <div><strong>Period:</strong> Full</div>
                                     <div><strong>From:</strong> {item.fromUserId}</div>
                                     <div><strong>Shared:</strong> {item.sharedAt?.toDate?.()?.toLocaleDateString() || 'Recently'}</div>
                                 </div>
@@ -1038,10 +1341,10 @@ const TDSDeductedMonthlyTable = () => {
 
 
           {showAddEmployee && (
-            <EmployeeForm onSave={handleSaveEmployee} onCancel={() => setShowAddEmployee(false)} />
+            <EmployeeForm user={user} onSave={handleSaveEmployee} onCancel={() => setShowAddEmployee(false)} />
           )}
           {editingEmployeeId && (
-            <EmployeeForm
+            <EmployeeForm user={user}
               employee={employees.find((e) => e.id === editingEmployeeId)}
               onSave={handleSaveEmployee}
               onCancel={() => setEditingEmployeeId(null)}
@@ -1074,16 +1377,29 @@ const TDSDeductedMonthlyTable = () => {
                 <>
                      
                     <div className="monthly-section print-section">
-                        <div className="text-center mb-4 print-header">
-                            <h1 className="text-2xl font-bold mb-2">{selectedEmployee?.heading || "COMPANY NAME"}</h1>
-                            <p className="text-sm text-gray-600">{selectedEmployee?.address || "Company Address"}</p>
-                            <div className="border-t border-b border-gray-300 py-3 mt-4">
-                                <h2 className="text-xl font-bold">PAYSLIP</h2>
-                                <p className="text-sm text-gray-600">For the month of {selectedMonth} {selectedYear}</p>
-                            </div>
-                        </div>
-                        <MonthlyPayslipBlock />
-                    </div>
+    <div className="text-center mb-4 print-header">
+        <div className="relative mb-4" style={{ minHeight: '64px' }}>
+            {selectedEmployee?.companyLogo && (
+                <div className="absolute left-0 top-0">
+                    <img 
+                        src={selectedEmployee.companyLogo} 
+                        alt="Company Logo" 
+                        className="h-16 w-16 object-contain"
+                    />
+                </div>
+            )}
+            <div className="w-full text-center flex flex-col justify-center" style={{ minHeight: '64px' }}>
+                <h1 className="text-2xl font-bold mb-2">{selectedEmployee?.heading || "COMPANY NAME"}</h1>
+                <p className="text-sm text-gray-600">{selectedEmployee?.address || "Company Address"}</p>
+            </div>
+        </div>
+        <div className="border-t border-b border-gray-300 py-3 mt-4">
+            <h2 className="text-xl font-bold">PAYSLIP</h2>
+            <p className="text-sm text-gray-600">For the month of {selectedMonth} {selectedYear}</p>
+        </div>
+    </div>
+    <MonthlyPayslipBlock />
+</div>
                      
                     <div className="annual-section print-section mt-8">
                         <AnnualReportBlock />
