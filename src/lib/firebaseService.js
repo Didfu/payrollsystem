@@ -217,24 +217,32 @@ class AdvancedCache {
 }
 
 // Connection management
+// Connection management
 class ConnectionManager {
   constructor() {
-    this.isOnline = navigator.onLine;
-    this.pendingWrites = [];
-    this.setupEventListeners();
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+      this.isOnline = navigator.onLine;
+      this.pendingWrites = [];
+      this.setupEventListeners();
+    } else {
+      this.isOnline = true; // Assume online on server
+      this.pendingWrites = [];
+    }
   }
 
   setupEventListeners() {
-    window.addEventListener('online', () => {
-      this.isOnline = true;
-      this.processPendingWrites();
-      enableNetwork(db);
-    });
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.isOnline = true;
+        this.processPendingWrites();
+        enableNetwork(db);
+      });
 
-    window.addEventListener('offline', () => {
-      this.isOnline = false;
-      disableNetwork(db);
-    });
+      window.addEventListener('offline', () => {
+        this.isOnline = false;
+        disableNetwork(db);
+      });
+    }
   }
 
   async processPendingWrites() {
@@ -254,6 +262,7 @@ class ConnectionManager {
     this.pendingWrites.push(writeFn);
   }
 }
+
 
 // Performance monitoring
 class PerformanceMonitor {
@@ -1464,15 +1473,16 @@ export const firebaseService = {
 
 // Auto-cleanup on page unload
 if (typeof window !== 'undefined') {
- window.addEventListener('beforeunload', () => {
-   firebaseService.cleanup();
- });
+  window.addEventListener('beforeunload', () => {
+    firebaseService.cleanup();
+  });
 
- // Periodic cleanup
- setInterval(() => {
-   firebaseService.optimizeFirestore().catch(console.error);
- }, 10 * 60 * 1000); // Every 10 minutes
+  // Periodic cleanup
+  setInterval(() => {
+    firebaseService.optimizeFirestore().catch(console.error);
+  }, 10 * 60 * 1000); // Every 10 minutes
 }
+
 
 // Export additional utilities
 export const cacheManager = cache;
