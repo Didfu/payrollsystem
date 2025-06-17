@@ -495,7 +495,7 @@ const [taxDeductions, setTaxDeductions] = useState({
                                     <td className="border border-gray-300 p-3 text-right font-bold">Total Annual</td>
                                     <td className="border border-gray-300 p-3 text-right font-bold">₹{Object.values(annualData).reduce((s, i) => s + (i?.gross || 0), 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     <td className="border border-gray-300 p-3 text-right font-bold">₹{Object.values(annualData).reduce((s, i) => s + (i?.projectedGross || 0), 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                    <td className="border border-gray-300 p-3 text-right font-bold text-blue-700">₹{Object.values(annualData).reduce((s, i) => s + ((i?.gross || 0) + (i?.projectedGross || 0)), 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="border border-gray-300 p-3 text-right font-bold text-black-700">₹{Object.values(annualData).reduce((s, i) => s + ((i?.gross || 0) + (i?.projectedGross || 0)), 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -541,162 +541,148 @@ const TaxDeductionTable = () => {
     };
 
     return (
-        <div className="mb-6 print:mb-4">
-            <h3 className="font-bold mb-4 section-heading">Tax Deductions & TDS Summary</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Tax Deductions Table */}
-                <div>
-                    <h4 className="font-semibold mb-3 text-sm">Tax Deductions</h4>
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse border border-gray-300 text-sm annual-table">
-                            <colgroup>
-                                <col className="w-3/4" />
-                                <col className="w-1/4" />
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th className="border border-gray-300 p-3 text-left font-semibold">Description</th>
-                                    <th className="border border-gray-300 p-3 text-right font-semibold w-32">Amount</th>
+    <div className="mb-6 print:mb-4">
+        <h3 className="font-bold mb-4 section-heading">Tax Deductions & TDS Summary</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Tax Deductions Table */}
+            <div>
+                <h4 className="font-semibold mb-3 text-sm">Tax Deductions</h4>
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-gray-300 text-sm annual-table">
+                        <colgroup>
+                            <col className="w-3/4" />
+                            <col className="w-1/4" />
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th className="border border-gray-300 p-3 text-left font-semibold">Description</th>
+                                <th className="border border-gray-300 p-3 text-right font-semibold w-32">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {taxDeductionFields.map(({ key, label }) => (
+                                <tr key={key}>
+                                    <td className="border border-gray-300 p-3 font-medium">{label}</td>
+                                    <td className="border border-gray-300 p-3 text-right w-32">
+                                        <span className="screen-only">
+                                            <input
+                                                type="number"
+                                                defaultValue={taxDeductions[key] || 0}
+                                                onBlur={(e) => updateTaxDeduction(key, e.target.value)}
+                                                className="w-full text-right border-0 bg-transparent focus:outline-1px"
+                                                step="0.01"
+                                            />
+                                        </span>
+                                        <span className="print-only">
+                                            ₹{(taxDeductions[key] || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {taxDeductionFields.map(({ key, label }) => (
-                                    <tr key={key}>
-                                        <td className="border border-gray-300 p-3 font-medium">{label}</td>
-                                        <td className="border border-gray-300 p-3 text-right w-32">
-                                            <span className="screen-only">
-                                                <input
-                                                    type="number"
-                                                    defaultValue={taxDeductions[key] || 0}
-                                                    onBlur={(e) => updateTaxDeduction(key, e.target.value)}
-                                                    className="w-full text-right border-0 bg-transparent focus:outline-1px"
-                                                    step="0.01"
-                                                />
-                                            </span>
-                                            <span className="print-only">
-                                                ₹{(taxDeductions[key] || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* TDS Deducted Monthly Table - MOVED INSIDE THE GRID */}
-                <div>
-                    <TDSDeductedMonthlyTable />
+                            ))}
+                            <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
+                                <td className="border border-gray-300 p-3 text-right font-bold">Total</td>
+                                <td className="border border-gray-300 p-3 text-right font-bold text-black-700">
+                                    ₹{Object.values(taxDeductions).reduce((sum, val) => sum + (parseFloat(val) || 0), 0).toLocaleString("en-IN", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+
+            {/* TDS Deducted Monthly Table */}
+            <div>
+                <TDSDeductedMonthlyTable />
+            </div>
         </div>
-    );
+    </div>
+);
+
 };
 
 const TDSDeductedMonthlyTable = () => {
-    const [tdsDeductions, setTdsDeductions] = useState([]);
-
-    const addRow = () => {
-        setTdsDeductions(prev => [...prev, { month: '', amount: 0 }]);
+    const getFinancialYearMonths = (startYear) => {
+        const months = [
+            'April', 'May', 'June', 'July', 'August', 'September',
+            'October', 'November', 'December',
+            'January', 'February', 'March'
+        ];
+        return months.map((month, i) => {
+            const year = i < 9 ? startYear : startYear + 1;
+            return `${month}-${year}`;
+        });
     };
 
-    const removeRow = (index) => {
-        setTdsDeductions(prev => prev.filter((_, i) => i !== index));
+    const currentYear = parseInt(getNormalizedYear(selectedYear));
+    const months = getFinancialYearMonths(currentYear);
+
+    const updateMonthAmount = (month, amount) => {
+        setTdsDeductions(prev => ({
+            ...prev,
+            [month]: parseFloat(amount) || 0
+        }));
     };
 
-    const updateRow = (index, field, value) => {
-        setTdsDeductions(prev => 
-            prev.map((row, i) => 
-                i === index 
-                    ? { ...row, [field]: field === 'amount' ? parseFloat(value) || 0 : value }
-                    : row
-            )
-        );
-    };
-
-    const totalTds = tdsDeductions.reduce((sum, row) => sum + (row.amount || 0), 0);
+    const totalTds = months.reduce((sum, month) => sum + (tdsDeductions[month] || 0), 0);
 
     return (
         <div>
             <h4 className="font-semibold mb-3 text-sm">TDS Deducted Monthly</h4>
             <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-300 text-sm annual-table">
+                    <colgroup>
+                        <col className="w-3/4" />
+                        <col className="w-1/4" />
+                    </colgroup>
                     <thead>
                         <tr>
                             <th className="border border-gray-300 p-3 text-left font-semibold">Month</th>
                             <th className="border border-gray-300 p-3 text-right font-semibold">Amount</th>
-                            <th className="border border-gray-300 p-3 text-center font-semibold ">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {tdsDeductions.map((row, index) => (
-                            <tr key={index}>
-                                <td className="border border-gray-300 p-3 font-medium">
-                                    <input
-                                        type="text"
-                                        value={row.month}
-                                        onChange={(e) => updateRow(index, 'month', e.target.value)}
-                                        placeholder="Enter month/period"
-                                        className="w-full border-0 bg-transparent focus:outline-1px font-medium "
-                                    />
-                                    <span className="">
-                                        {row.month}
+                        {months.map((month) => (
+                            <tr key={month}>
+                                <td className="border border-gray-300 p-3 font-medium">{month}</td>
+                                <td className="border border-gray-300 p-3 text-right w-32">
+                                    <span className="screen-only">
+                                        <input
+                                            type="number"
+                                            defaultValue={tdsDeductions[month] || 0}
+onBlur={(e) => updateMonthAmount(month, e.target.value)}
+                                            className="w-full text-right border-0 bg-transparent focus:outline-1px"
+                                            step="0.01"
+                                            
+                                        />
                                     </span>
-                                </td>
-                                <td className="border border-gray-300 p-3 text-right">
-                                    <input
-                                        type="number"
-                                        value={row.amount}
-                                        onChange={(e) => updateRow(index, 'amount', e.target.value)}
-                                        placeholder="0.00"
-                                        className="w-full text-right border-0 bg-transparent focus:outline-1px "
-                                        step="0.01"
-                                    />
-                                    <span className="">
-                                        ₹{(row.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    <span className="print-only">
+                                        ₹{(tdsDeductions[month] || 0).toLocaleString("en-IN", {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}
                                     </span>
-                                </td>
-                                <td className="border border-gray-300 p-3 text-center print:hidden">
-                                    <button
-                                        onClick={() => removeRow(index)}
-                                        className="text-red-600 hover:text-red-800 text-sm font-medium"
-                                        title="Remove row"
-                                    >
-                                        ×
-                                    </button>
                                 </td>
                             </tr>
                         ))}
-                        {tdsDeductions.length === 0 && (
-                            <tr className="print:hidden">
-                                <td colSpan="3" className="border border-gray-300 p-6 text-center text-gray-500">
-                                    No entries yet. Click "Add Row" to start.
-                                </td>
-                            </tr>
-                        )}
-                        {tdsDeductions.length > 0 && (
-                            <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
-                                <td className="border border-gray-300 p-3 text-right font-bold">Total</td>
-                                <td className="border border-gray-300 p-3 text-right font-bold text-blue-700">
-                                    ₹{totalTds.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </td>
-                                <td className="border border-gray-300 p-3 "></td>
-                            </tr>
-                        )}
+                        <tr className="bg-gray-100 font-semibold border-t-2 border-gray-400">
+                            <td className="border border-gray-300 p-3 text-right font-bold">Total</td>
+                            <td className="border border-gray-300 p-3 text-right font-bold text-black-700">
+                                ₹{totalTds.toLocaleString("en-IN", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                })}
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
-            </div>
-            <div className="mt-4 print:hidden">
-                <button
-                    onClick={addRow}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium"
-                >
-                    Add Row
-                </button>
             </div>
         </div>
     );
 };
+
 
     const MonthlyPayslipBlock = () => (
         <div className="mb-6">
