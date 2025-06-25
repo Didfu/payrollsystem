@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { firebaseService } from '../lib/firebaseService';
+import { electronService } from '../lib/electronService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
 import { useEffect, useState } from "react";
 
@@ -64,10 +64,7 @@ const [expandedEmpId, setExpandedEmpId] = useState(null);
     const [typedValue, setTypedValue] = useState("2025-26");
     const [isLoading, setIsLoading] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
-    const [showShareModal, setShowShareModal] = useState(false);
-    const [shareEmail, setShareEmail] = useState("");
-    const [sharedData, setSharedData] = useState([]);
-    const [showSharedData, setShowSharedData] = useState(false);
+
     // Add this after your existing state declarations
 const [taxDeductions, setTaxDeductions] = useState({
     standardDeduction: 75000,
@@ -99,81 +96,20 @@ const [taxDeductions, setTaxDeductions] = useState({
         const parts = yearString.split('-');
         return parts[0];
     };
-
-    useEffect(() => {
-        const loadSharedData = async () => {
-            if (!user?.email) return;
-            try {
-                const shared = await firebaseService.getSharedPayrollData(user.email);
-                setSharedData(shared.filter(item => item.status === 'pending'));
-            } catch (error) {
-                console.error('Error loading shared data:', error);
-            }
-        };
-        loadSharedData();
-    }, [user?.email]);
-
-    const handleSharePayroll = async () => {
-        if (!shareEmail.trim()) {
-            alert("Please enter an email address");
-            return;
-        }
-        if (!selectedEmployee || !selectedMonth || !selectedYear) {
-            alert("Please select employee, month and year");
-            return;
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(shareEmail.trim())) {
-            alert("Please enter a valid email address");
-            return;
-        }
-        setIsLoading(true);
-        try {
-            await firebaseService.sharePayrollData(user.uid, shareEmail.trim(), selectedEmployee.id);
-            alert(`Payroll data shared successfully with ${shareEmail}!`);
-            setShowShareModal(false);
-            setShareEmail("");
-        } catch (error) {
-            console.error('Error sharing payroll:', error);
-            alert('Error sharing payroll data. Please try again.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleAcceptSharedData = async (shareItem) => {
-        setIsLoading(true);
-        try {
-            // Note: firebaseService.acceptSharedData should handle the 'normalizedYear' internally
-            await firebaseService.acceptSharedData(shareItem.id, user.uid, shareItem.shareData);
-            const employeesData = await firebaseService.getEmployees(user.uid);
-            const employeesWithLocalIds = employeesData.map(emp => ({ ...emp, id: emp.id }));
-            setEmployees(employeesWithLocalIds);
-            const payrollData = await firebaseService.getAllPayrollData(user.uid);
-            setEmployeeData(payrollData); // This object will use normalized years as keys
-            setSharedData(prev => prev.filter(item => item.id !== shareItem.id));
-            alert("Shared data accepted successfully!");
-        } catch (error) {
-            console.error('Error accepting shared data:', error);
-            alert('Error accepting shared data. Please try again.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
+    
     useEffect(() => {
         const loadUserData = async () => {
             if (!user?.uid || dataLoaded) return;
             setIsLoading(true);
             try {
-                const employeesData = await firebaseService.getEmployees(user.uid);
+                const employeesData = await electronService.getEmployees(user.uid);
                 const employeesWithLocalIds = employeesData.map(emp => ({ ...emp, id: emp.id }));
                 setEmployees(employeesWithLocalIds);
-                const payrollData = await firebaseService.getAllPayrollData(user.uid);
+                const payrollData = await electronService.getAllPayrollData(user.uid);
                 setEmployeeData(payrollData); // This object will use normalized years as keys
                 if (employeesWithLocalIds.length > 0) {
                     setSelectedEmpId(employeesWithLocalIds[0].id);
-                    setIsSetupComplete(true);
+                    
                 }
                 setDataLoaded(true);
             } catch (error) {
@@ -200,7 +136,7 @@ const [taxDeductions, setTaxDeductions] = useState({
         }
         setIsLoading(true);
         try {
-            const savedId = await firebaseService.saveEmployee(user.uid, employeeData);
+            const savedId = await electronService.saveEmployee(user.uid, employeeData);
             if (employeeData.id) {
                 setEmployees(prev => prev.map(emp => emp.id === employeeData.id ? { ...employeeData, id: savedId } : emp));
                 alert("Employee updated successfully!");
@@ -224,7 +160,7 @@ const [taxDeductions, setTaxDeductions] = useState({
         }
         setIsLoading(true);
         try {
-            await firebaseService.deleteEmployee(user.uid, empId);
+            await electronService.deleteEmployee(user.uid, empId);
             setEmployees(prev => prev.filter(emp => emp.id !== empId));
             if (selectedEmpId === empId) setSelectedEmpId("");
             alert("Employee deleted successfully!");
@@ -392,7 +328,7 @@ const [taxDeductions, setTaxDeductions] = useState({
         setIsLoading(true);
         try {
             const normalizedYear = getNormalizedYear(selectedYear); // Use normalized year for saving
-            await firebaseService.saveMonthlyData(user.uid, selectedEmpId, normalizedYear, selectedMonth, { earnings: { ...monthlyEarnings }, deductions: { ...deductions }, deductionToggles: { ...deductionToggles }, taxDeductions: { ...taxDeductions },tdsDeductions: { ...tdsDeductions } });
+            await electronService.saveMonthlyData(user.uid, selectedEmpId, normalizedYear, selectedMonth, { earnings: { ...monthlyEarnings }, deductions: { ...deductions }, deductionToggles: { ...deductionToggles }, taxDeductions: { ...taxDeductions },tdsDeductions: { ...tdsDeductions } });
             
             // Update local state with the normalized year key
             setEmployeeData((prev) => ({
@@ -817,7 +753,7 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
       try {
         setIsLoadingCompanies(true);
         // This now gets both templates and user companies
-        const allCompanies = await firebaseService.getCompanies(user.uid);
+        const allCompanies = await electronService.getCompanies(user.uid);
         setCompanies(allCompanies);
       } catch (error) {
         console.error('Error loading companies:', error);
@@ -892,7 +828,7 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
       return;
     }
     try {
-      const added = await firebaseService.addCompany(user.uid, newCompany);
+      const added = await electronService.saveCompany(user.uid, newCompany);
       setCompanies(prev => [...prev, { ...added, isUserCompany: true }]);
       setFormData(prev => ({
         ...prev,
@@ -1126,35 +1062,7 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
   );
 };
 
-    const SharedDataModal = () => (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-                <h3 className="text-lg font-semibold mb-4">Shared Payroll Data ({sharedData.length})</h3>
-                {sharedData.length === 0 ? (
-                    <p className="text-gray-500 text-center py-4">No shared data available</p>
-                ) : (
-                    <div className="space-y-4">
-                        {sharedData.map((item) => (
-                            <div key={item.id} className="border rounded-lg p-4">
-                                <div className="grid grid-cols-2 gap-4 mb-3">
-                                    <div><strong>Employee:</strong> {item.shareData.employee.name}</div>
-                                    <div><strong>Period:</strong> Full</div>
-                                    <div><strong>From:</strong> {item.fromUserId}</div>
-                                    <div><strong>Shared:</strong> {item.sharedAt?.toDate?.()?.toLocaleDateString() || 'Recently'}</div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <Button size="sm" onClick={() => handleAcceptSharedData(item)}className="bg-green-600 hover:bg-green-700">Accept & Add to Dashboard</Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div className="mt-6 flex justify-end">
-                    <Button variant="outline" onClick={() => setShowSharedData(false)}>Close</Button>
-                </div>
-            </div>
-        </div>
-    );
+
 
     if (!isSetupComplete) {
   const selectedEmployeeData = employees.find(e => e.id === selectedEmpId);
@@ -1207,18 +1115,7 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
         <Card className="p-4 sm:p-6 print:shadow-none print:rounded-none print:p-0 print:border-none print-container">
           <div className="flex justify-between items-center mb-4 sm:mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold text-center flex-1">Setup</h1>
-            {sharedData.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => setShowSharedData(true)}
-                className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative ml-4"
-              >
-                Shared Data
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {sharedData.length}
-                </span>
-              </Button>
-            )}
+            
           </div>
 
           <p className="text-gray-600 mb-4 sm:mb-6 text-center">
@@ -1351,8 +1248,6 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
           </div>
         </Card>
       </div>
-
-      {showSharedData && <SharedDataModal />}
     </>
   );
 }
@@ -1395,60 +1290,6 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
         </div>
     );
 
-    const ShareModal = () => {
-        const [localEmail, setLocalEmail] = useState(shareEmail);
-
-        useEffect(() => {
-            setLocalEmail(shareEmail);
-        }, [shareEmail]);
-
-        const handleShare = async () => {
-            if (!localEmail.trim()) {
-                alert("Please enter an email address");
-                return;
-            }
-            if (!selectedEmployee || !selectedMonth || !selectedYear) {
-                alert("Please select employee, month and year");
-                return;
-            }
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(localEmail.trim())) {
-                alert("Please enter a valid email address");
-                return;
-            }
-            setIsLoading(true);
-            try {
-
-                await firebaseService.sharePayrollData(user.uid, localEmail.trim(), selectedEmployee.id, getNormalizedYear(selectedYear), selectedMonth);
-                alert(`Payroll data shared successfully with ${localEmail}!`);
-                setShowShareModal(false);
-                setShareEmail("");
-                setLocalEmail("");
-            } catch (error) {
-                console.error('Error sharing payroll:', error);
-                alert('Error sharing payroll data. Please try again.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-                    <h3 className="text-lg font-semibold mb-4">Share Payroll Data</h3>
-                    <p className="text-sm text-gray-600 mb-4">Share {selectedEmployee?.name}'s payroll data for {selectedMonth} {selectedYear}</p>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2">Email address</label>
-                        <input type="email" value={localEmail} onChange={(e) => setLocalEmail(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Enter recipient's email" autoFocus/>
-                    </div>
-                    <div className="flex gap-3">
-                        <Button onClick={handleShare} className="bg-green-600 hover:bg-green-700">Share</Button>
-                        <Button variant="outline" onClick={() => {setShowShareModal(false);setShareEmail("");setLocalEmail("");}}>Cancel</Button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="p-6 max-w-[1200px] mx-auto print:p-0 print:max-w-none print:mx-0 print:bg-white border-0">
@@ -1459,13 +1300,21 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
                         <Button variant={currentView === "monthly" ? "default" : "outline"} onClick={() => setCurrentView("monthly")}>Monthly View</Button>
                         <Button variant={currentView === "annual" ? "default" : "outline"} onClick={() => setCurrentView("annual")}>Annual View</Button>
                     </div>
-                    <div className="flex gap-2">
-                        {sharedData.length > 0 && (
-                            <Button variant="outline" onClick={() => setShowSharedData(true)} className="bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100 relative">Shared Data<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{sharedData.length}</span></Button>
-                        )}
-                        <Button onClick={() => setShowShareModal(true)} className="bg-green-600 hover:bg-green-700" disabled={!selectedEmployee || !selectedMonth || !selectedYear}>Share</Button>
-                        <Button onClick={() => window.print()} className="bg-purple-600 hover:bg-purple-700">Print</Button>
-                    </div>
+<Button
+  onClick={() => {
+    const employee = employees.find(e => e.id === selectedEmpId);
+    if (!employee) return;
+
+    window.electronAPI.downloadPDF({
+      name: employee.name,
+      month: selectedMonth,
+      year: selectedYear.split("-")[0],
+    });
+  }}
+  className="bg-purple-600 hover:bg-purple-700"
+>
+  Print
+</Button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 print:hidden">
                     <div>
@@ -1562,8 +1411,6 @@ const EmployeeForm = ({ user, employee, onSave, onCancel }) => {
                 </div>
                 <PrintLayout />
             </div>
-            {showShareModal && <ShareModal />}
-            {showSharedData && <SharedDataModal />}
             {isLoading && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white p-6 rounded-lg shadow-lg">

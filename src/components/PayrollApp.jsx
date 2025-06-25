@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import Login from './Login';
 import Payslip from './Payslip';
+import { electronService } from '../lib/electronService';
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User, Building, Shield, Bell, Settings } from 'lucide-react';
@@ -12,6 +13,7 @@ const PayrollApp = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -107,7 +109,7 @@ const PayrollApp = () => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="min-h-screen bg-slate-50"
+          className="min-h-screen bg-slate-50 "
         >
           {/* Professional Header */}
           <motion.header 
@@ -123,19 +125,6 @@ const PayrollApp = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
               >
-                {/* Company Logo & Brand */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-lg shadow-sm">
-                    <Building className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-slate-800">
-                      SwiftLink
-                    </h1>
-                    <p className="text-xs text-slate-500 -mt-1">Payroll System</p>
-                  </div>
-                </div>
-
                 {/* User Info */}
                 <motion.div 
                   className="flex items-center gap-3 bg-slate-100 px-4 py-2 rounded-lg"
@@ -150,36 +139,22 @@ const PayrollApp = () => {
                     <p className="font-medium text-slate-800">
                       {user.displayName || user.email?.split('@')[0]}
                     </p>
-                    <p className="text-xs text-slate-600">Employee Portal</p>
+                    
                   </div>
                 </motion.div>
+                
+
+                
               </motion.div>
               
               {/* Header Actions */}
               <motion.div
-                className="flex items-center gap-3"
+                className="flex items-center gap-3 print:hidden"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
               >
-                {/* Notification Bell */}
-                <motion.button
-                  className="flex items-center justify-center w-10 h-10 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Bell className="h-5 w-5" />
-                </motion.button>
-
-                {/* Settings */}
-                <motion.button
-                  className="flex items-center justify-center w-10 h-10 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Settings className="h-5 w-5" />
-                </motion.button>
-
+                
                 {/* Logout Button */}
                 <motion.div
                   whileHover={{ scale: 1.02 }}
@@ -197,18 +172,7 @@ const PayrollApp = () => {
               </motion.div>
             </div>
 
-            {/* Security indicator */}
-            <motion.div 
-              className="max-w-7xl mx-auto mt-3 flex items-center gap-2 text-xs text-slate-600"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-            >
-              <Shield className="h-3 w-3 text-green-600" />
-              <span>Secure connection established</span>
-              <span className="text-slate-400">•</span>
-              <span>Session expires in 8 hours</span>
-            </motion.div>
+            
           </motion.header>
           
           {/* Main Content */}
@@ -232,16 +196,23 @@ const PayrollApp = () => {
               <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-600">
                 <div className="flex items-center gap-4">
                   <span>© 2025 SwiftLink Payroll System</span>
-                  <span className="text-slate-400">•</span>
-                  <button className="hover:text-slate-800 transition-colors">Privacy Policy</button>
-                  <span className="text-slate-400">•</span>
-                  <button className="hover:text-slate-800 transition-colors">Terms of Service</button>
+                  
                 </div>
                 <div className="flex items-center gap-4">
                   <span>Need help?</span>
-                  <button className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                    Contact HR Support
-                  </button>
+                  <button
+  className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+  onClick={() =>
+    window.open(
+      "https://mail.google.com/mail/?view=cm&fs=1&to=mahyavanshidhruv@gmail.com&su=SwiftLink%20Support",
+      "_blank"
+    )
+  }
+>
+  Contact Support
+</button>
+
+
                 </div>
               </div>
             </div>

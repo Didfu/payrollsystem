@@ -1,33 +1,74 @@
 {
-  "name": "payroll",
+  "main": "electron/main.js",
+  "name": "swiftlink",
   "version": "0.1.0",
   "private": true,
+  "homepage": "./",
+  "description": "An application for managing Payroll with ease.",
+  "author": "Dhruv Mahyavanshi",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "electron": "electron .",
+    "desktop-dev": "concurrently \"npm run dev\" \"npm run electron\"",
+    "build-electron": "npm run build && electron-builder",
+    "dist": "npm run build && electron-builder",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "crypto": "^1.0.1",
+    "electron-store": "^10.1.0",
     "firebase": "^11.9.1",
     "framer-motion": "^12.18.1",
     "lucide-react": "^0.513.0",
     "next": "15.3.3",
+    "node-machine-id": "^1.1.12",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
-    "tailwind-merge": "^3.3.0"
+    "tailwind-merge": "^3.3.0",
+    "tailwind-scrollbar": "^4.0.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "concurrently": "^9.1.2",
+    "electron": "^36.5.0",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.4"
+  },
+  "build": {
+    "appId": "com.swiftlink.app",
+    "productName": "Swift Link",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+       "public/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

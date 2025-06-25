@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect,useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,7 +53,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-800 p-4 relative overflow-hidden flex items-center justify-center">
+    <div className="overflow-hidden">
+      
+
+    <div className="h-screen bg-slate-800 p-4 relative overflow-hidden flex items-center justify-center overflow-hidden">
       {/* Background graphics */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-[600px] h-[600px] opacity-40">
@@ -107,7 +110,7 @@ export default function Login() {
         <div className="text-center mb-10">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/95 backdrop-blur-xl shadow-2xl shadow-black/30 border border-white/20 flex items-center justify-center">
             <img
-    src="/SwiftLink.png"
+    src="./SwiftLink.png"
     alt="SwiftLink Logo"
     className="w-10 h-10 object-contain rounded-xl"
   />
@@ -117,16 +120,16 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <Card className="bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl shadow-black/30 rounded-3xl p-0 overflow-hidden flex flex-row w-[700px] h-[400px]">
-          <div className="w-1/2 p-8 flex flex-col justify-center">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">
-                {isSignup ? 'Create Account' : 'Sign In'}
-              </h2>
-              <p className="text-gray-500 text-sm font-medium">
-                {isSignup ? 'Join SwiftLink to manage your payroll efficiently' : 'Welcome back to SwiftLink'}
-              </p>
-            </div>
+        <Card className="backdrop-blur-xl shadow-2xl shadow-black/30 rounded-3xl p-0 overflow-hidden flex flex-row w-[350px] h-[400px]">
+  <div className="w-full p-8 flex flex-col justify-center">
+    <div className="mb-6">
+      <h2 className="text-2xl font-semibold text-gray-900 mb-1 tracking-tight">
+        {isSignup ? 'Create Account' : 'Sign In'}
+      </h2>
+      <p className="text-gray-500 text-sm font-medium">
+        {isSignup ? 'Join SwiftLink to manage your payroll efficiently' : 'Welcome back to SwiftLink'}
+      </p>
+    </div>
 
             {error && (
               <div className="bg-red-50/95 backdrop-blur-sm border border-red-200/60 text-red-700 px-4 py-3 rounded-xl mb-4 text-sm flex items-start">
@@ -152,19 +155,9 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Google login */}
           
-          <div className="w-1/2 p-8 flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-white to-slate-50">
-          <p className="text-gray-500 text-sm font-medium"> Or sign in with</p>
-          <br></br>
-            <Button type="button" onClick={handleGoogleSignIn} disabled={loading} className="w-full h-12 bg-white/90 hover:bg-white backdrop-blur-sm text-gray-700 font-semibold rounded-xl border border-gray-300/60 transition-all duration-200 hover:border-gray-400 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-              <div className="flex items-center justify-center space-x-2">
-                <FcGoogle className="h-5 w-5" />
-                <span>Continue with Google</span>
-              </div>
-            </Button>
-            
-          </div>
+          
+          
         </Card>
 
         {/* Footer */}
@@ -172,6 +165,6 @@ export default function Login() {
           <p className="text-xs text-slate-400 font-medium">Fast. Secure. Done Right.</p>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }

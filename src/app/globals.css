@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+@font-face {
+  font-family: 'Open Sans';
+  src: url('/fonts/OpenSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -117,6 +123,7 @@
     @apply border-border outline-ring/50;
   }
   body {
+    @apply font-sans;
     @apply bg-background text-foreground;
   }
 }
